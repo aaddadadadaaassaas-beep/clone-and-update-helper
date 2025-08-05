@@ -11,8 +11,8 @@ export const useTickets = () => {
         .select(`
           *,
           category:categories(*),
-          submitter:submitter_id(full_name, email),
-          assignee:assignee_id(full_name, email)
+          submitter:profiles!tickets_submitter_id_fkey(full_name, email, user_id),
+          assignee:profiles!tickets_assignee_id_fkey(full_name, email, user_id)
         `)
         .order('created_at', { ascending: false });
 

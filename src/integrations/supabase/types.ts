@@ -62,6 +62,47 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id: string
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string | null
@@ -137,6 +178,36 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          created_at: string
+          email_template: string | null
+          event_type: string
+          id: string
+          is_enabled: boolean
+          recipients: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_template?: string | null
+          event_type: string
+          id?: string
+          is_enabled?: boolean
+          recipients?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_template?: string | null
+          event_type?: string
+          id?: string
+          is_enabled?: boolean
+          recipients?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -172,6 +243,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ticket_history: {
+        Row: {
+          action: string
+          created_at: string
+          description: string | null
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_history_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tickets: {
         Row: {
