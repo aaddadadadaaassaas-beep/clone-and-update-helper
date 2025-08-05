@@ -78,7 +78,12 @@ const ProfileSettings = () => {
 
       if (error) {
         console.error('Update error:', error);
+        console.error('Error details:', error.details, error.hint, error.message);
         throw error;
+      }
+
+      if (!result) {
+        throw new Error('Nenhum perfil foi atualizado. Verifique suas permissões.');
       }
 
       console.log('Update result:', result);
