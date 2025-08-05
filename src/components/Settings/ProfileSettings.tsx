@@ -142,7 +142,7 @@ const ProfileSettings = () => {
                 {formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {(isEditing || profile?.role === 'user' || profile?.role === 'employee') && (
+            {isEditing && (
               <div>
                 <Label htmlFor="avatar-upload" className="cursor-pointer">
                   <Button type="button" variant="outline" size="sm" asChild>
