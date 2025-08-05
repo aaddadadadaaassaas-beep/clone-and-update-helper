@@ -50,7 +50,13 @@ const TicketForm = () => {
 
   const handleSubmit = async (data: TicketFormData) => {
     try {
-      await createTicket.mutateAsync(data);
+      // Type assertion since form validation ensures required fields are present
+      await createTicket.mutateAsync({
+        title: data.title,
+        description: data.description,
+        category_id: data.category_id,
+        priority: data.priority,
+      });
       form.reset();
       setAttachments([]);
       navigate('/tickets');
