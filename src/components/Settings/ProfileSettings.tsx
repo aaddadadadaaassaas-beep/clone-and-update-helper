@@ -56,20 +56,38 @@ const ProfileSettings = () => {
     mutationFn: async (data: typeof formData) => {
       if (!user) throw new Error('No user found');
 
-      // Admins can update everything, regular users only avatar
-      const updateData = profile?.role === 'admin' || profile?.role === 'owner' 
-        ? data 
-        : { avatar_url: data.avatar_url };
+      console.log('Updating profile with data:', data);
+      console.log('User role:', profile?.role);
 
-      const { error } = await supabase
+      // Create the update data object
+      const updateData = {
+        full_name: data.full_name,
+        email: data.email,
+        organization: data.organization,
+        avatar_url: data.avatar_url
+      };
+
+      console.log('Update data:', updateData);
+
+      const { data: result, error } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+
+      console.log('Update result:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Profile updated successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user-profile-header'] });
       setIsEditing(false);
       toast({
         title: 'Perfil atualizado',
@@ -77,6 +95,7 @@ const ProfileSettings = () => {
       });
     },
     onError: (error: any) => {
+      console.error('Profile update error:', error);
       toast({
         title: 'Erro ao atualizar perfil',
         description: error.message,

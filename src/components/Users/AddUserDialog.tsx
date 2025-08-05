@@ -23,19 +23,30 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
     role: 'user' as 'user' | 'employee' | 'admin' | 'owner',
     password: ''
   });
+  const [generatedPassword, setGeneratedPassword] = useState('');
+
+  // Generate random password
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setGeneratedPassword(password);
+    setFormData(prev => ({ ...prev, password }));
+    return password;
+  };
 
   const createUser = useMutation({
     mutationFn: async (userData: typeof formData) => {
-      // Create user directly in profiles table with signup
+      // Create user directly with regular signup
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: userData.full_name,
-            organization: userData.organization,
-            role: userData.role
+            full_name: userData.full_name
           }
         }
       });
@@ -43,9 +54,10 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Falha ao criar usuário');
 
-      // Wait for trigger to create profile, then update it
+      // Wait for trigger to create profile
       await new Promise(resolve => setTimeout(resolve, 2000));
 
+      // Update the profile with role and additional data
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -60,13 +72,14 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
         console.warn('Profile update failed:', profileError);
       }
 
-      return authData.user;
+      return { user: authData.user, password: userData.password };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast({
         title: 'Usuário criado com sucesso',
-        description: 'O novo usuário foi adicionado ao sistema.',
+        description: `Usuário criado. Senha gerada: ${data.password}`,
+        duration: 10000, // Show for 10 seconds
       });
       onOpenChange(false);
       setFormData({
@@ -76,6 +89,7 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
         role: 'user',
         password: ''
       });
+      setGeneratedPassword('');
     },
     onError: (error: any) => {
       toast({
@@ -88,7 +102,7 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.full_name || !formData.password) {
+    if (!formData.email || !formData.full_name) {
       toast({
         title: 'Campos obrigatórios',
         description: 'Preencha todos os campos obrigatórios.',
@@ -96,7 +110,10 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
       });
       return;
     }
-    createUser.mutate(formData);
+    
+    // Generate password if not set
+    const passwordToUse = formData.password || generatePassword();
+    createUser.mutate({ ...formData, password: passwordToUse });
   };
 
   return (
@@ -135,15 +152,20 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Senha Temporária *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                required
-                placeholder="Mínimo 6 caracteres"
-              />
+              <Label htmlFor="password">Senha Temporária</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="password"
+                  type="text"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Será gerada automaticamente"
+                  readOnly
+                />
+                <Button type="button" onClick={generatePassword} variant="outline">
+                  Gerar
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
