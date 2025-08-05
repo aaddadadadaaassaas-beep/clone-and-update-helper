@@ -29,7 +29,8 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle,
-  User
+  User,
+  Plus
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -114,16 +115,16 @@ const Tickets = () => {
 
   const getStatusBadge = (status: string) => {
     const configs = {
-      open: { label: "Aberto", className: "status-open" },
-      waiting: { label: "Aguardando", className: "status-waiting" },
-      closed: { label: "Fechado", className: "status-closed" },
-      duplicate: { label: "Duplicado", className: "status-duplicate" }
+      open: { label: "Aberto", className: "bg-orange-100 text-orange-800 border-orange-200" },
+      waiting: { label: "Aguardando", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+      closed: { label: "Fechado", className: "bg-green-100 text-green-800 border-green-200" },
+      duplicate: { label: "Duplicado", className: "bg-gray-100 text-gray-800 border-gray-200" }
     };
     
     const config = configs[status as keyof typeof configs] || configs.open;
     
     return (
-      <Badge className={cn("text-xs", config.className)}>
+      <Badge className={cn("text-xs border", config.className)}>
         {getStatusIcon(status)}
         <span className="ml-1">{config.label}</span>
       </Badge>
@@ -132,10 +133,10 @@ const Tickets = () => {
 
   const getPriorityBadge = (priority: string) => {
     const configs = {
-      low: { label: "Baixa", color: "text-success border-success" },
-      medium: { label: "Média", color: "text-warning border-warning" },
-      high: { label: "Alta", color: "text-danger border-danger" },
-      critical: { label: "Crítica", color: "text-purple-600 border-purple-600" }
+      low: { label: "Baixa", color: "text-green-600 border-green-600" },
+      medium: { label: "Média", color: "text-yellow-600 border-yellow-600" },
+      high: { label: "Alta", color: "text-orange-600 border-orange-600" },
+      critical: { label: "Crítica", color: "text-red-600 border-red-600" }
     };
     
     const config = configs[priority as keyof typeof configs] || configs.medium;
@@ -171,6 +172,22 @@ const Tickets = () => {
   return (
     <Layout title="Todos os Tickets" subtitle="Gerenciar e visualizar tickets do sistema">
       <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-semibold">Gerenciar Tickets</h2>
+            <p className="text-sm text-muted-foreground">
+              Visualize e gerencie todos os tickets do sistema
+            </p>
+          </div>
+          <Button asChild>
+            <a href="/new-ticket">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Ticket
+            </a>
+          </Button>
+        </div>
+
         {/* Filtros */}
         <Card>
           <CardHeader>
