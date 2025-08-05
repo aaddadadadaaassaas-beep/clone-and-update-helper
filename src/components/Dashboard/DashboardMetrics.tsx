@@ -5,13 +5,35 @@ import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 
 const DashboardMetrics = () => {
-  // Métricas gerais de tickets
+  // Métricas gerais de tickets - agora visível para todos os usuários
   const { data: ticketStats } = useQuery({
     queryKey: ['dashboard-ticket-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get current user and role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      let query = supabase
         .from('tickets')
         .select('status, priority, created_at, closed_at, due_date');
+
+      // Apply role-based filtering for tickets visibility
+      if (profile.role === 'user') {
+        query = query.eq('submitter_id', profile.id);
+      } else if (profile.role === 'employee') {
+        query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+      }
+      // Admin and owner can see all tickets (no additional filter)
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -37,12 +59,33 @@ const DashboardMetrics = () => {
   const { data: categoryData } = useQuery({
     queryKey: ['dashboard-category-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get current user and role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      let query = supabase
         .from('tickets')
         .select(`
           status,
           category:categories(name, color)
         `);
+
+      // Apply role-based filtering
+      if (profile.role === 'user') {
+        query = query.eq('submitter_id', profile.id);
+      } else if (profile.role === 'employee') {
+        query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

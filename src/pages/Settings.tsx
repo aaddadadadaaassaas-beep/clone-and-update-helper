@@ -1,6 +1,7 @@
 import Layout from "@/components/Layout/Layout";
 import NotificationSettings from "@/components/Settings/NotificationSettings";
 import PredefinedResponses from "@/components/Settings/PredefinedResponses";
+import ProfileSettings from "@/components/Settings/ProfileSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,8 @@ import {
   Shield, 
   Mail,
   Save,
-  MessageSquare
+  MessageSquare,
+  User
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,13 +41,21 @@ const Settings = () => {
 
   return (
     <Layout title="Configurações" subtitle="Gerencie as configurações do sistema">
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="profile" className="flex items-center space-x-2">
+            <User className="h-4 w-4" />
+            <span>Perfil</span>
+          </TabsTrigger>
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="responses">Respostas</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="profile" className="space-y-6">
+          <ProfileSettings />
+        </TabsContent>
         
         <TabsContent value="general" className="space-y-6">
           {/* Configurações Gerais */}

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useQuery } from '@tanstack/react-query';
 import { 
   Ticket, 
   Plus, 
@@ -136,7 +137,80 @@ const Sidebar = () => {
     fetchUserProfile();
   }, [user]);
 
-  const navigation = getNavigationForRole(userRole);
+  // Get real ticket counts
+  const { data: ticketCounts } = useQuery({
+    queryKey: ['sidebar-ticket-counts', user?.id, userRole],
+    queryFn: async () => {
+      if (!user) return {};
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) return {};
+
+      let query = supabase.from('tickets').select('status, priority');
+
+      // Apply role-based filtering
+      if (profile.role === 'user') {
+        query = query.eq('submitter_id', profile.id);
+      } else if (profile.role === 'employee') {
+        query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+      }
+
+      const { data: tickets } = await query;
+      if (!tickets) return {};
+
+      return {
+        myTickets: profile.role === 'user' 
+          ? tickets.length 
+          : tickets.filter(t => t.status !== 'closed').length,
+        allTickets: tickets.length,
+        open: tickets.filter(t => t.status === 'open').length,
+        waiting: tickets.filter(t => t.status === 'waiting').length,
+        closed: tickets.filter(t => t.status === 'closed').length,
+        highPriority: tickets.filter(t => ['high', 'urgent'].includes(t.priority)).length,
+      };
+    },
+    enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const getNavigationWithCounts = (navigation: any[]) => {
+    return navigation.map(item => {
+      let badge = undefined;
+      
+      if (item.href === '/my-tickets') {
+        badge = ticketCounts?.myTickets?.toString();
+      } else if (item.href === '/tickets') {
+        badge = ticketCounts?.allTickets?.toString();
+      }
+      
+      if (item.children) {
+        item.children = item.children.map((child: any) => {
+          let childBadge = undefined;
+          
+          if (child.href === '/tickets') {
+            childBadge = ticketCounts?.open?.toString();
+          } else if (child.href === '/tickets/waiting') {
+            childBadge = ticketCounts?.waiting?.toString();
+          } else if (child.href === '/tickets/closed') {
+            childBadge = ticketCounts?.closed?.toString();
+          } else if (child.href === '/tickets/high-priority') {
+            childBadge = ticketCounts?.highPriority?.toString();
+          }
+          
+          return { ...child, badge: childBadge };
+        });
+      }
+      
+      return { ...item, badge };
+    });
+  };
+
+  const navigation = getNavigationWithCounts(getNavigationForRole(userRole));
 
   const isCurrentPath = (href: string) => {
     if (href === '/' && location.pathname === '/') return true;
