@@ -6,80 +6,62 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useCategories } from '@/hooks/useCategories';
+import { useCreateTicket } from '@/hooks/useTickets';
+import { useNavigate } from 'react-router-dom';
 
 const ticketSchema = z.object({
   title: z.string().min(5, "Título deve ter pelo menos 5 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
-  category: z.string().min(1, "Categoria é obrigatória"),
-  priority: z.enum(["low", "medium", "high", "critical"]),
-  dueDate: z.string().optional(),
+  category_id: z.string().min(1, "Categoria é obrigatória"),
+  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
 });
 
 type TicketFormData = z.infer<typeof ticketSchema>;
 
-const categories = [
-  { value: "access", label: "Acesso" },
-  { value: "system", label: "Sistema" },
-  { value: "users", label: "Usuários" },
-  { value: "performance", label: "Performance" },
-  { value: "reports", label: "Relatórios" },
-  { value: "hardware", label: "Hardware" },
-  { value: "software", label: "Software" },
-  { value: "network", label: "Rede" },
-  { value: "security", label: "Segurança" },
-  { value: "other", label: "Outros" },
-];
-
 const priorities = [
   { value: "low", label: "Baixa" },
-  { value: "medium", label: "Média" },
+  { value: "normal", label: "Normal" },
   { value: "high", label: "Alta" },
-  { value: "critical", label: "Crítica" },
+  { value: "urgent", label: "Urgente" },
 ];
 
-interface TicketFormProps {
-  onSubmit?: (data: TicketFormData & { attachments: File[] }) => void;
-  isLoading?: boolean;
-}
-
-const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
+const TicketForm = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const { toast } = useToast();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const createTicket = useCreateTicket();
+  const navigate = useNavigate();
 
   const form = useForm<TicketFormData>({
     resolver: zodResolver(ticketSchema),
     defaultValues: {
       title: "",
       description: "",
-      category: "",
-      priority: "medium",
-      dueDate: "",
+      category_id: "",
+      priority: "normal",
     },
   });
+
+  const handleSubmit = async (data: TicketFormData) => {
+    try {
+      await createTicket.mutateAsync(data);
+      form.reset();
+      setAttachments([]);
+      navigate('/tickets');
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     const maxSize = 10 * 1024 * 1024; // 10MB
-
     const validFiles = files.filter(file => {
       if (file.size > maxSize) {
         toast({
@@ -91,7 +73,6 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
       }
       return true;
     });
-
     setAttachments(prev => [...prev, ...validFiles]);
   };
 
@@ -99,17 +80,9 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (data: TicketFormData) => {
-    onSubmit?.({ ...data, attachments });
-    
-    toast({
-      title: "Ticket criado com sucesso!",
-      description: "Seu ticket foi criado e será analisado em breve.",
-    });
-
-    form.reset();
-    setAttachments([]);
-  };
+  if (categoriesLoading) {
+    return <div>Carregando categorias...</div>;
+  }
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -122,7 +95,6 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Título */}
             <FormField
               control={form.control}
               name="title"
@@ -130,17 +102,13 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
                 <FormItem>
                   <FormLabel>Título *</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Descreva brevemente o problema..." 
-                      {...field} 
-                    />
+                    <Input placeholder="Descreva brevemente o problema..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Descrição */}
             <FormField
               control={form.control}
               name="description"
@@ -154,18 +122,14 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Forneça o máximo de detalhes possível para agilizar o atendimento
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Categoria */}
             <FormField
               control={form.control}
-              name="category"
+              name="category_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoria *</FormLabel>
@@ -176,9 +140,9 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
+                      {categories?.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -188,7 +152,6 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
               )}
             />
 
-            {/* Prioridade */}
             <FormField
               control={form.control}
               name="priority"
@@ -214,28 +177,6 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
               )}
             />
 
-            {/* Data de Vencimento */}
-            <FormField
-              control={form.control}
-              name="dueDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data de Vencimento</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="datetime-local" 
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Opcional: Defina uma data limite para resolução
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Upload de Arquivos */}
             <div className="space-y-4">
               <Label>Anexos</Label>
               <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
@@ -259,7 +200,6 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
                 </p>
               </div>
 
-              {/* Lista de Anexos */}
               {attachments.length > 0 && (
                 <div className="space-y-2">
                   <Label>Arquivos Selecionados:</Label>
@@ -283,10 +223,9 @@ const TicketForm = ({ onSubmit, isLoading = false }: TicketFormProps) => {
               )}
             </div>
 
-            {/* Botões */}
             <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? "Criando..." : "Criar Ticket"}
+              <Button type="submit" disabled={createTicket.isPending} className="flex-1">
+                {createTicket.isPending ? "Criando..." : "Criar Ticket"}
               </Button>
               <Button 
                 type="button" 

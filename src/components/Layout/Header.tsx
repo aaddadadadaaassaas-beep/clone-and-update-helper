@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell, Settings, User, LogOut, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import Sidebar from "./Sidebar";
 
 interface HeaderProps {
@@ -22,6 +24,16 @@ interface HeaderProps {
 
 const Header = ({ title, subtitle }: HeaderProps) => {
   const [notificationCount] = useState(3);
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Logout realizado",
+      description: "Você foi desconectado com sucesso.",
+    });
+  };
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -74,9 +86,11 @@ const Header = ({ title, subtitle }: HeaderProps) => {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin User</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user?.user_metadata?.full_name || 'Usuário'}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    admin@helpdesk.com
+                    {user?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -90,7 +104,7 @@ const Header = ({ title, subtitle }: HeaderProps) => {
                 <span>Configurações</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sair</span>
               </DropdownMenuItem>
