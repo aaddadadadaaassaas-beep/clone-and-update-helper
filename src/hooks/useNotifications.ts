@@ -6,7 +6,7 @@ interface NotificationData {
   subject: string;
   ticketId: string;
   ticketTitle: string;
-  eventType: 'created' | 'updated' | 'assigned' | 'closed' | 'comment';
+  eventType: 'created' | 'updated' | 'assigned' | 'closed' | 'comment' | 'reopened' | 'duplicated';
   message: string;
   userName?: string;
 }
@@ -14,6 +14,8 @@ interface NotificationData {
 export const useNotifications = () => {
   const sendNotification = useMutation({
     mutationFn: async (data: NotificationData) => {
+      console.log('Sending notification:', data);
+      
       const { data: result, error } = await supabase.functions.invoke('send-notification', {
         body: data
       });
@@ -24,11 +26,14 @@ export const useNotifications = () => {
         return { success: false, error };
       }
 
+      console.log('Notification sent successfully:', result);
       return result;
     }
   });
 
   const notifyTicketCreated = async (ticketId: string, ticketTitle: string, submitterName: string) => {
+    console.log(`Preparing notification for ticket creation: ${ticketId}`);
+    
     // Get all admins and employees for notification
     const { data: users } = await supabase
       .from('profiles')
@@ -37,8 +42,11 @@ export const useNotifications = () => {
       .eq('is_active', true);
 
     if (users && users.length > 0) {
+      const recipients = users.map(u => u.email).filter(Boolean);
+      console.log(`Notifying ${recipients.length} users about ticket creation`);
+      
       await sendNotification.mutateAsync({
-        to: users.map(u => u.email),
+        to: recipients,
         subject: `Novo Ticket: ${ticketTitle}`,
         ticketId,
         ticketTitle,
@@ -55,6 +63,8 @@ export const useNotifications = () => {
     assigneeEmail: string, 
     assignerName: string
   ) => {
+    console.log(`Preparing notification for ticket assignment: ${ticketId} to ${assigneeEmail}`);
+    
     await sendNotification.mutateAsync({
       to: [assigneeEmail],
       subject: `Ticket Atribuído: ${ticketTitle}`,
@@ -72,6 +82,8 @@ export const useNotifications = () => {
     submitterEmail: string, 
     resolverName: string
   ) => {
+    console.log(`Preparing notification for ticket closure: ${ticketId} to ${submitterEmail}`);
+    
     await sendNotification.mutateAsync({
       to: [submitterEmail],
       subject: `Ticket Resolvido: ${ticketTitle}`,
@@ -90,6 +102,8 @@ export const useNotifications = () => {
     commenterName: string,
     commentContent: string
   ) => {
+    console.log(`Preparing notification for new comment: ${ticketId} to ${recipients.length} recipients`);
+    
     await sendNotification.mutateAsync({
       to: recipients,
       subject: `Novo Comentário: ${ticketTitle}`,
@@ -103,11 +117,52 @@ export const useNotifications = () => {
     });
   };
 
+  const notifyTicketReopened = async (
+    ticketId: string, 
+    ticketTitle: string, 
+    recipients: string[], 
+    reopenerName: string
+  ) => {
+    console.log(`Preparing notification for ticket reopening: ${ticketId}`);
+    
+    await sendNotification.mutateAsync({
+      to: recipients,
+      subject: `Ticket Reaberto: ${ticketTitle}`,
+      ticketId,
+      ticketTitle,
+      eventType: 'reopened',
+      message: `Este ticket foi reaberto para análise adicional.`,
+      userName: reopenerName
+    });
+  };
+
+  const notifyTicketDuplicated = async (
+    ticketId: string, 
+    ticketTitle: string, 
+    submitterEmail: string, 
+    moderatorName: string,
+    duplicateTicketId: string
+  ) => {
+    console.log(`Preparing notification for ticket duplication: ${ticketId}`);
+    
+    await sendNotification.mutateAsync({
+      to: [submitterEmail],
+      subject: `Ticket Duplicado: ${ticketTitle}`,
+      ticketId,
+      ticketTitle,
+      eventType: 'duplicated',
+      message: `Seu ticket foi marcado como duplicado. Ticket relacionado: ${duplicateTicketId}`,
+      userName: moderatorName
+    });
+  };
+
   return {
     sendNotification,
     notifyTicketCreated,
     notifyTicketAssigned,
     notifyTicketClosed,
-    notifyNewComment
+    notifyNewComment,
+    notifyTicketReopened,
+    notifyTicketDuplicated
   };
 };

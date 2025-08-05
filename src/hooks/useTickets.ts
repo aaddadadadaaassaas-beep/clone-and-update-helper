@@ -87,7 +87,7 @@ export const useCreateTicket = () => {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, full_name')
         .eq('user_id', user.id)
         .single();
 
@@ -99,10 +99,47 @@ export const useCreateTicket = () => {
           ...ticketData,
           submitter_id: profile.id,
         })
-        .select()
+        .select(`
+          *,
+          category:categories(*),
+          submitter:profiles!tickets_submitter_id_fkey(full_name, email, user_id)
+        `)
         .single();
 
       if (error) throw error;
+
+      // Send notification asynchronously (don't wait for it to complete)
+      try {
+        console.log('Triggering notification for ticket creation:', data.id);
+        
+        // Get admin/staff emails for notification
+        const { data: staffUsers } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .in('role', ['admin', 'owner', 'employee'])
+          .eq('is_active', true);
+
+        if (staffUsers && staffUsers.length > 0) {
+          const recipients = staffUsers.map(u => u.email).filter(Boolean);
+          
+          // Call notification function
+          await supabase.functions.invoke('send-notification', {
+            body: {
+              to: recipients,
+              subject: `Novo Ticket: ${data.title}`,
+              ticketId: data.id,
+              ticketTitle: data.title,
+              eventType: 'created',
+              message: data.description,
+              userName: profile.full_name
+            }
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't throw error for notifications
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -128,14 +165,77 @@ export const useUpdateTicket = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+      // Get original ticket for comparison
+      const { data: originalTicket } = await supabase
+        .from('tickets')
+        .select(`
+          *,
+          submitter:profiles!tickets_submitter_id_fkey(full_name, email),
+          assignee:profiles!tickets_assignee_id_fkey(full_name, email)
+        `)
+        .eq('id', id)
+        .single();
+
       const { data, error } = await supabase
         .from('tickets')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          submitter:profiles!tickets_submitter_id_fkey(full_name, email),
+          assignee:profiles!tickets_assignee_id_fkey(full_name, email)
+        `)
         .single();
 
       if (error) throw error;
+
+      // Get current user for notification
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      // Send notifications for specific changes
+      try {
+        // Assignment notification
+        if (updates.assignee_id && originalTicket?.assignee_id !== updates.assignee_id) {
+          if (data.assignee?.email) {
+            await supabase.functions.invoke('send-notification', {
+              body: {
+                to: [data.assignee.email],
+                subject: `Ticket Atribuído: ${data.title}`,
+                ticketId: data.id,
+                ticketTitle: data.title,
+                eventType: 'assigned',
+                message: 'Este ticket foi atribuído para você.',
+                userName: currentProfile?.full_name
+              }
+            });
+          }
+        }
+
+        // Status change to closed notification
+        if (updates.status === 'closed' && originalTicket?.status !== 'closed') {
+          if (data.submitter?.email) {
+            await supabase.functions.invoke('send-notification', {
+              body: {
+                to: [data.submitter.email],
+                subject: `Ticket Fechado: ${data.title}`,
+                ticketId: data.id,
+                ticketTitle: data.title,
+                eventType: 'closed',
+                message: 'Seu ticket foi resolvido e fechado.',
+                userName: currentProfile?.full_name
+              }
+            });
+          }
+        }
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+      }
+
       return data;
     },
     onSuccess: () => {
