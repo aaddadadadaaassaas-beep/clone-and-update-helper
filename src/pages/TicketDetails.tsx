@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, User, Calendar, Clock, MessageSquare, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +15,7 @@ import Layout from '@/components/Layout/Layout';
 import CommentsSection from '@/components/Tickets/CommentsSection';
 import AttachmentsList from '@/components/Tickets/AttachmentsList';
 import FileUpload from '@/components/Tickets/FileUpload';
+import TicketHistory from '@/components/Tickets/TicketHistory';
 import { useUsers } from '@/hooks/useUsers';
 
 const TicketDetails = () => {
@@ -264,6 +266,9 @@ const TicketDetails = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* History */}
+            <TicketHistory ticketId={ticket.id} />
           </div>
 
           {/* Sidebar */}
@@ -327,6 +332,19 @@ const TicketDetails = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Due Date */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Data de Vencimento</label>
+                  <Input
+                    type="datetime-local"
+                    value={ticket.due_date ? new Date(ticket.due_date).toISOString().slice(0, 16) : ''}
+                    onChange={(e) => {
+                      const dueDate = e.target.value ? new Date(e.target.value).toISOString() : null;
+                      updateTicketMutation.mutate({ due_date: dueDate });
+                    }}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -373,6 +391,29 @@ const TicketDetails = () => {
                     </p>
                   </div>
                 </div>
+
+                {ticket.due_date && (
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Vencimento</p>
+                      <p className={`text-sm ${
+                        new Date(ticket.due_date) < new Date() 
+                          ? 'text-red-600 font-medium' 
+                          : 'text-muted-foreground'
+                      }`}>
+                        {new Date(ticket.due_date).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                        {new Date(ticket.due_date) < new Date() && ' (Vencido)'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center space-x-2">
                   <div className="h-4 w-4 rounded-full" style={{ backgroundColor: ticket.category?.color }} />
