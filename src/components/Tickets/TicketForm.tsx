@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCategories } from '@/hooks/useCategories';
 import { useCreateTicket } from '@/hooks/useTickets';
 import { useNavigate } from 'react-router-dom';
+import FileUpload from './FileUpload';
+import { UploadedFile } from '@/hooks/useFileUpload';
 
 const ticketSchema = z.object({
   title: z.string().min(5, "Título deve ter pelo menos 5 caracteres"),
@@ -32,7 +33,8 @@ const priorities = [
 ];
 
 const TicketForm = () => {
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [createdTicketId, setCreatedTicketId] = useState<string | null>(null);
   const { toast } = useToast();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const createTicket = useCreateTicket();
@@ -50,40 +52,24 @@ const TicketForm = () => {
 
   const handleSubmit = async (data: TicketFormData) => {
     try {
-      // Type assertion since form validation ensures required fields are present
-      await createTicket.mutateAsync({
+      const result = await createTicket.mutateAsync({
         title: data.title,
         description: data.description,
         category_id: data.category_id,
         priority: data.priority,
       });
+      
       form.reset();
-      setAttachments([]);
+      setUploadedFiles([]);
+      setCreatedTicketId(null);
       navigate('/tickets');
     } catch (error) {
       // Error handling is done in the mutation
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    const validFiles = files.filter(file => {
-      if (file.size > maxSize) {
-        toast({
-          title: "Arquivo muito grande",
-          description: `${file.name} excede o limite de 10MB`,
-          variant: "destructive",
-        });
-        return false;
-      }
-      return true;
-    });
-    setAttachments(prev => [...prev, ...validFiles]);
-  };
-
-  const removeAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+  const handleFilesChange = (files: UploadedFile[]) => {
+    setUploadedFiles(files);
   };
 
   if (categoriesLoading) {
@@ -185,48 +171,13 @@ const TicketForm = () => {
 
             <div className="space-y-4">
               <Label>Anexos</Label>
-              <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                <Label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="text-sm font-medium text-primary hover:underline">
-                    Clique para fazer upload
-                  </span>
-                  <span className="text-sm text-muted-foreground"> ou arraste e solte</span>
-                </Label>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  PDF, DOC, TXT, IMG até 10MB por arquivo
-                </p>
-              </div>
-
-              {attachments.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Arquivos Selecionados:</Label>
-                  {attachments.map((file, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between p-2 bg-muted rounded-lg"
-                    >
-                      <span className="text-sm truncate">{file.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeAttachment(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <FileUpload
+                ticketId="temp-id" // Temporary ID for demo, real implementation would need ticket ID first
+                onFilesChange={handleFilesChange}
+                maxFiles={5}
+                disabled={false}
+                existingFiles={uploadedFiles}
+              />
             </div>
 
             <div className="flex gap-4 pt-4">
@@ -238,7 +189,8 @@ const TicketForm = () => {
                 variant="outline" 
                 onClick={() => {
                   form.reset();
-                  setAttachments([]);
+                  setUploadedFiles([]);
+                  setCreatedTicketId(null);
                 }}
               >
                 Limpar
