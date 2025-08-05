@@ -22,7 +22,9 @@ import {
   MessageSquare,
   Upload,
   Download,
-  BookOpen
+  BookOpen,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 const getNavigationForRole = (userRole: string) => {
@@ -128,6 +130,16 @@ const Sidebar = () => {
   // Get user profile to determine role
   const [userRole, setUserRole] = useState<string>('user');
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  
+  // Check if tickets section should be expanded by default
+  const isTicketsPathActive = location.pathname.startsWith('/tickets');
+  
+  useEffect(() => {
+    if (isTicketsPathActive) {
+      setExpandedGroups(prev => ({ ...prev, 'todos-os-tickets': true }));
+    }
+  }, [isTicketsPathActive]);
   
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -228,6 +240,13 @@ const Sidebar = () => {
     return false;
   };
 
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }));
+  };
+
   return (
     <div className="flex h-full w-72 flex-col border-r bg-background">
       {/* Logo */}
@@ -254,19 +273,30 @@ const Sidebar = () => {
                   "w-full justify-start",
                   isCurrentPath(item.href) && "bg-secondary"
                 )}
-                onClick={() => navigate(item.href)}
+                onClick={() => {
+                  if (item.children) {
+                    toggleGroup(item.name.toLowerCase().replace(/ /g, '-'));
+                  } else {
+                    navigate(item.href);
+                  }
+                }}
               >
                 <item.icon className="mr-3 h-4 w-4" />
                 {item.name}
                 {item.badge && (
-                  <Badge variant="secondary" className="ml-auto">
+                  <Badge variant="secondary" className="ml-auto mr-2">
                     {item.badge}
                   </Badge>
+                )}
+                {item.children && (
+                  expandedGroups[item.name.toLowerCase().replace(/ /g, '-')] ? 
+                    <ChevronDown className="ml-auto h-4 w-4" /> : 
+                    <ChevronRight className="ml-auto h-4 w-4" />
                 )}
               </Button>
 
               {/* Sub-navigation */}
-              {item.children && (
+              {item.children && expandedGroups[item.name.toLowerCase().replace(/ /g, '-')] && (
                 <div className="ml-4 mt-2 space-y-1">
                   {item.children.map((child) => (
                     <Button
