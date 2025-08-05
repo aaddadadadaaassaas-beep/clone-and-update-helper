@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import Layout from "@/components/Layout/Layout";
 import StatsCard from "@/components/Dashboard/StatsCard";
 import RecentTickets from "@/components/Dashboard/RecentTickets";
@@ -11,48 +13,76 @@ import {
   Star,
   Target
 } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
+  const { user } = useAuth();
+
+  const { data: stats } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const { data: tickets } = await supabase.from('tickets').select('*');
+      const { data: profiles } = await supabase.from('profiles').select('*');
+      
+      const totalTickets = tickets?.length || 0;
+      const openTickets = tickets?.filter(t => t.status === 'open').length || 0;
+      const inProgress = tickets?.filter(t => t.status === 'waiting').length || 0;
+      const closedToday = tickets?.filter(t => 
+        t.status === 'closed' && 
+        new Date(t.closed_at || '').toDateString() === new Date().toDateString()
+      ).length || 0;
+      
+      return {
+        totalTickets,
+        openTickets,
+        inProgress,
+        closedToday,
+        activeUsers: profiles?.filter(p => p.is_active).length || 0,
+        resolutionRate: totalTickets ? Math.round((tickets?.filter(t => t.status === 'closed').length || 0) / totalTickets * 100) : 0
+      };
+    }
+  });
+
   const statsData = [
     {
       title: "Total de Tickets",
-      value: "247",
+      value: stats?.totalTickets?.toString() || "0",
       description: "Total geral no sistema",
       icon: Ticket,
       trend: { value: 12, isPositive: true }
     },
     {
       title: "Tickets Abertos",
-      value: "23",
+      value: stats?.openTickets?.toString() || "0",
       description: "Aguardando atendimento",
       icon: AlertTriangle,
       trend: { value: 5, isPositive: false }
     },
     {
       title: "Em Andamento", 
-      value: "15",
+      value: stats?.inProgress?.toString() || "0",
       description: "Sendo processados",
       icon: Clock,
       trend: { value: 8, isPositive: true }
     },
     {
       title: "Resolvidos Hoje",
-      value: "12",
+      value: stats?.closedToday?.toString() || "0",
       description: "Finalizados nas últimas 24h",
       icon: CheckCircle,
       trend: { value: 15, isPositive: true }
     },
     {
       title: "Usuários Ativos",
-      value: "156",
+      value: stats?.activeUsers?.toString() || "0",
       description: "Usuários no sistema",
       icon: Users,
       trend: { value: 3, isPositive: true }
     },
     {
       title: "Taxa de Resolução",
-      value: "94%",
-      description: "Tickets resolvidos no prazo",
+      value: `${stats?.resolutionRate || 0}%`,
+      description: "Tickets resolvidos",
       icon: Target,
       trend: { value: 2, isPositive: true }
     },
