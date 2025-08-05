@@ -49,11 +49,11 @@ const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) => {
     mutationFn: async (userData: UserFormData) => {
       // Use the admin RPC function to create user
       const { data, error } = await supabase.rpc('create_user_as_admin', {
-        user_email: userData.email,
-        user_password: userData.temp_password,
-        user_full_name: userData.full_name,
-        user_role: userData.role,
-        user_organization: userData.organization || null,
+        p_email: userData.email,
+        p_password: userData.temp_password,
+        p_full_name: userData.full_name,
+        p_role: userData.role,
+        p_organization: userData.organization || null,
       });
 
       if (error) {
@@ -61,7 +61,13 @@ const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) => {
         throw error;
       }
 
-      return data;
+      // Check if the result indicates success
+      const result = data as any;
+      if (!result?.success) {
+        throw new Error(result?.error || 'Falha na criação do usuário');
+      }
+
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

@@ -21,10 +21,14 @@ export const useChangeUserPassword = () => {
         throw rpcError;
       }
 
-      // Since we can't use auth.admin in client-side, we'll just return success
-      // The password change is simulated for demo purposes
-      console.log('Password change simulated successfully');
-      return { success: true };
+      // Check if the result indicates success
+      const result = rpcResult as any;
+      if (!result?.success) {
+        throw new Error(result?.error || 'Falha na alteração da senha');
+      }
+
+      console.log('Password change authorized:', rpcResult);
+      return rpcResult;
     },
     onSuccess: (data, variables) => {
       console.log('Password change mutation success');

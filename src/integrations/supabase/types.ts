@@ -426,7 +426,7 @@ export type Database = {
     Functions: {
       admin_update_user_password: {
         Args: { target_user_id: string; new_password: string }
-        Returns: boolean
+        Returns: Json
       }
       create_notification: {
         Args: {
@@ -440,13 +440,13 @@ export type Database = {
       }
       create_user_as_admin: {
         Args: {
-          user_email: string
-          user_password: string
-          user_full_name: string
-          user_role?: string
-          user_organization?: string
+          p_email: string
+          p_password: string
+          p_full_name: string
+          p_role?: Database["public"]["Enums"]["user_role"]
+          p_organization?: string
         }
-        Returns: string
+        Returns: Json
       }
       delete_user_safely: {
         Args: { target_user_id: string }
