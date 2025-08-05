@@ -89,30 +89,43 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: async (userId: string) => {
-      // Use the safe delete function from the database
-      const { data, error } = await supabase.rpc('delete_user_safely', {
-        target_user_id: userId
-      });
-
-      if (error) throw error;
-
-      // Get profile name for toast message
+      console.log('Attempting to delete user:', userId);
+      
+      // Get profile data first
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name')
-        .eq('id', userId)
+        .select('id, full_name, user_id')
+        .eq('user_id', userId)
         .maybeSingle();
 
+      console.log('Profile found:', profile);
+
+      if (!profile) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // Use the safe delete function from the database
+      const { data, error } = await supabase.rpc('delete_user_safely', {
+        target_user_id: profile.id
+      });
+
+      if (error) {
+        console.error('Delete user error:', error);
+        throw error;
+      }
+
+      console.log('User deleted successfully:', data);
       return profile;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast({
         title: 'Usuário excluído',
-        description: `${data.full_name} foi removido do sistema.`,
+        description: `${data?.full_name || 'Usuário'} foi removido do sistema.`,
       });
     },
     onError: (error: any) => {
+      console.error('Delete user mutation error:', error);
       toast({
         title: 'Erro ao excluir usuário',
         description: error.message || 'Ocorreu um erro inesperado.',

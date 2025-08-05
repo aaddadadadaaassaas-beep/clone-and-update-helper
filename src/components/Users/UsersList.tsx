@@ -18,7 +18,9 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  Key
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -49,6 +51,7 @@ const UsersList = () => {
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<any>(null);
   const [selectedUserForDelete, setSelectedUserForDelete] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [editFormData, setEditFormData] = useState({
     full_name: '',
     email: '',
@@ -127,7 +130,7 @@ const UsersList = () => {
     if (!selectedUserForDelete) return;
     
     try {
-      await deleteUser.mutateAsync(selectedUserForDelete.id);
+      await deleteUser.mutateAsync(selectedUserForDelete.user_id);
       setShowDeleteDialog(false);
       setSelectedUserForDelete(null);
     } catch (error) {
@@ -314,13 +317,29 @@ const UsersList = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newPassword">Nova Senha</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Digite a nova senha"
-              />
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Digite a nova senha"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
