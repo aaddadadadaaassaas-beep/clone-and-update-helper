@@ -1,0 +1,275 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional Helpdesk Design System - All colors MUST be HSL */
+
+@layer base {
+  :root {
+    /* Core Brand Colors */
+    --background: 220 13% 98%;
+    --foreground: 224 71% 4%;
+    
+    /* Card & Surface Colors */
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+    
+    /* Interactive Elements */
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+    
+    /* Primary Brand - Professional Blue */
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --primary-hover: 221 83% 48%;
+    --primary-glow: 221 83% 63%;
+    
+    /* Success - Green for positive actions */
+    --success: 142 76% 36%;
+    --success-foreground: 356 29% 98%;
+    --success-hover: 142 76% 31%;
+    
+    /* Warning - Orange for attention */
+    --warning: 32 95% 44%;
+    --warning-foreground: 356 29% 98%;
+    --warning-hover: 32 95% 39%;
+    
+    /* Error/High Priority - Red */
+    --danger: 0 84% 60%;
+    --danger-foreground: 356 29% 98%;
+    --danger-hover: 0 84% 55%;
+    
+    /* Status Colors for Tickets */
+    --status-open: 221 83% 53%;
+    --status-waiting: 32 95% 44%;
+    --status-closed: 142 76% 36%;
+    --status-duplicate: 262 83% 58%;
+    
+    /* Priority Colors */
+    --priority-low: 142 76% 36%;
+    --priority-medium: 32 95% 44%;
+    --priority-high: 0 84% 60%;
+    --priority-critical: 262 83% 58%;
+
+    /* Secondary Actions */
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 224 71% 4%;
+    --secondary-hover: 220 13% 90%;
+    
+    /* Muted Elements */
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
+    
+    /* Accent Elements */
+    --accent: 262 83% 58%;
+    --accent-foreground: 356 29% 98%;
+    --accent-hover: 262 83% 53%;
+    
+    /* Destructive Actions */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 356 29% 98%;
+    
+    /* Borders and Inputs */
+    --border: 220 13% 91%;
+    --input: 220 13% 95%;
+    --ring: 221 83% 53%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(142 76% 46%));
+    --gradient-warning: linear-gradient(135deg, hsl(var(--warning)), hsl(32 95% 54%));
+    --gradient-danger: linear-gradient(135deg, hsl(var(--danger)), hsl(0 84% 70%));
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 43% 11% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 43% 11% / 0.1), 0 2px 4px -1px hsl(220 43% 11% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(220 43% 11% / 0.1), 0 4px 6px -2px hsl(220 43% 11% / 0.05);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.5);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark Mode Brand Colors */
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+    
+    /* Dark Cards */
+    --card: 224 71% 4%;
+    --card-foreground: 210 40% 98%;
+    
+    /* Dark Interactive */
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Dark Primary */
+    --primary: 221 83% 63%;
+    --primary-foreground: 224 71% 4%;
+    --primary-hover: 221 83% 68%;
+    --primary-glow: 221 83% 73%;
+    
+    /* Dark Status Colors */
+    --status-open: 221 83% 63%;
+    --status-waiting: 32 95% 54%;
+    --status-closed: 142 76% 46%;
+    --status-duplicate: 262 83% 68%;
+    
+    /* Dark Secondary */
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-hover: 215 27.9% 21.9%;
+    
+    /* Dark Muted */
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    
+    /* Dark Accent */
+    --accent: 262 83% 68%;
+    --accent-foreground: 224 71% 4%;
+    --accent-hover: 262 83% 73%;
+    
+    /* Dark Destructive */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    /* Dark Borders */
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 221 83% 63%;
+    
+    /* Dark Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 46%), hsl(142 76% 56%));
+    --gradient-warning: linear-gradient(135deg, hsl(32 95% 54%), hsl(32 95% 64%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 62.8% 40.6%), hsl(0 62.8% 50.6%));
+    
+    /* Dark Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -1px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -2px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.7);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer utilities {
+  /* Custom gradient utilities */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .gradient-warning {
+    background: var(--gradient-warning);
+  }
+  
+  .gradient-danger {
+    background: var(--gradient-danger);
+  }
+  
+  /* Status badge utilities */
+  .status-open {
+    @apply bg-status-open text-white;
+  }
+  
+  .status-waiting {
+    @apply bg-status-waiting text-white;
+  }
+  
+  .status-closed {
+    @apply bg-status-closed text-white;
+  }
+  
+  .status-duplicate {
+    @apply bg-status-duplicate text-white;
+  }
+  
+  /* Priority utilities */
+  .priority-low {
+    @apply text-priority-low border-priority-low;
+  }
+  
+  .priority-medium {
+    @apply text-priority-medium border-priority-medium;
+  }
+  
+  .priority-high {
+    @apply text-priority-high border-priority-high;
+  }
+  
+  .priority-critical {
+    @apply text-priority-critical border-priority-critical;
+  }
+  
+  /* Animation utilities */
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+  
+  /* Shadow utilities */
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+}
