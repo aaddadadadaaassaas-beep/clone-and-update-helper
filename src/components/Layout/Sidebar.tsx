@@ -21,7 +21,8 @@ import {
   Tag,
   MessageSquare,
   Upload,
-  Download
+  Download,
+  BookOpen
 } from "lucide-react";
 
 const getNavigationForRole = (userRole: string) => {
@@ -82,6 +83,13 @@ const getNavigationForRole = (userRole: string) => {
       icon: Tag,
       current: false,
       roles: ['admin', 'owner']
+    },
+    {
+      name: "Base de Conhecimento",
+      href: "/knowledge-base",
+      icon: BookOpen,
+      current: false,
+      roles: ['admin', 'owner', 'employee']
     },
     {
       name: "Relatórios",

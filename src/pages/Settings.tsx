@@ -2,6 +2,7 @@ import Layout from "@/components/Layout/Layout";
 import NotificationSettings from "@/components/Settings/NotificationSettings";
 import PredefinedResponses from "@/components/Settings/PredefinedResponses";
 import ProfileSettings from "@/components/Settings/ProfileSettings";
+import AutomationRules from "@/components/Settings/AutomationRules";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,8 @@ import {
   Mail,
   Save,
   MessageSquare,
-  User
+  User,
+  Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,7 +44,7 @@ const Settings = () => {
   return (
     <Layout title="Configurações" subtitle="Gerencie as configurações do sistema">
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile" className="flex items-center space-x-2">
             <User className="h-4 w-4" />
             <span>Perfil</span>
@@ -50,6 +52,10 @@ const Settings = () => {
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="responses">Respostas</TabsTrigger>
+          <TabsTrigger value="automation">
+            <Zap className="h-4 w-4 mr-1" />
+            Automação
+          </TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
         </TabsList>
         
@@ -120,6 +126,10 @@ const Settings = () => {
         
         <TabsContent value="responses" className="space-y-6">
           <PredefinedResponses />
+        </TabsContent>
+
+        <TabsContent value="automation" className="space-y-6">
+          <AutomationRules />
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">
