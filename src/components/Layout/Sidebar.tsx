@@ -55,13 +55,6 @@ const getNavigationForRole = (userRole: string) => {
       icon: Ticket,
       current: false,
       badge: "15",
-      roles: ['admin', 'owner', 'employee']
-    },
-    {
-      name: "Views",
-      href: "#",
-      icon: FileText,
-      current: false,
       roles: ['admin', 'owner', 'employee'],
       children: [
         { name: "Abertos", href: "/tickets", icon: AlertTriangle, badge: "8", roles: ['admin', 'owner', 'employee'] },
