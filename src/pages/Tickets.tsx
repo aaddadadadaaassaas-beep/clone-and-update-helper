@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Layout from "@/components/Layout/Layout";
+import TicketDetails from "@/components/Tickets/TicketDetails";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ const Tickets = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
 
   const mockTickets = [
     {
@@ -168,6 +170,27 @@ const Tickets = () => {
     
     return matchesSearch && matchesStatus && matchesPriority;
   });
+
+  const handleViewTicket = (ticket: any) => {
+    setSelectedTicket({ ...ticket, requester: ticket.submitter });
+  };
+
+  if (selectedTicket) {
+    return (
+      <Layout title={`Ticket #${selectedTicket.id}`} subtitle={selectedTicket.title}>
+        <Button variant="outline" onClick={() => setSelectedTicket(null)} className="mb-4">
+          ← Voltar para Lista
+        </Button>
+        <TicketDetails
+          ticket={selectedTicket}
+          onStatusChange={() => {}}
+          onAssign={() => {}}
+          onAddComment={() => {}}
+          onClose={() => {}}
+        />
+      </Layout>
+    );
+  }
 
   return (
     <Layout title="Todos os Tickets" subtitle="Gerenciar e visualizar tickets do sistema">
@@ -324,7 +347,7 @@ const Tickets = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewTicket(ticket)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Visualizar
                           </DropdownMenuItem>

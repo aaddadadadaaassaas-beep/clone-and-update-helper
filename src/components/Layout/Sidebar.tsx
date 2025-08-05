@@ -64,21 +64,10 @@ const navigation = [
     current: false
   },
   {
-    name: "Comentários",
-    href: "/comments",
-    icon: MessageSquare,
-    current: false
-  },
-  {
     name: "Relatórios",
-    href: "#",
+    href: "/reports",
     icon: BarChart3,
-    current: false,
-    children: [
-      { name: "Exportar JSON", href: "/reports/export", icon: Download },
-      { name: "Importar Dados", href: "/reports/import", icon: Upload },
-      { name: "Operações em Lote", href: "/reports/bulk", icon: Archive }
-    ]
+    current: false
   },
   {
     name: "Configurações",

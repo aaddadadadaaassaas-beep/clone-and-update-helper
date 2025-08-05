@@ -9,6 +9,9 @@ import Tickets from "./pages/Tickets";
 import NewTicket from "./pages/NewTicket";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+import Categories from "./pages/Categories";
+import Reports from "./pages/Reports";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -19,10 +22,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<Index />} />
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/new-ticket" element={<NewTicket />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
