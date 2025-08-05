@@ -22,6 +22,7 @@ export type Database = {
           filename: string
           id: string
           mime_type: string
+          storage_path: string | null
           ticket_id: string
           user_id: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           filename: string
           id?: string
           mime_type: string
+          storage_path?: string | null
           ticket_id: string
           user_id: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           filename?: string
           id?: string
           mime_type?: string
+          storage_path?: string | null
           ticket_id?: string
           user_id?: string
         }
@@ -367,7 +370,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_attachment_url: {
+        Args: { attachment_id: string }
+        Returns: string
+      }
     }
     Enums: {
       ticket_priority: "low" | "normal" | "high" | "urgent"
