@@ -10,8 +10,8 @@ export const useChangeUserPassword = () => {
     mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {
       console.log('Attempting to change password for user:', userId);
       
-      // Use RPC function to verify permissions and simulate password change
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('admin_update_user_password', {
+      // Use RPC function that now returns JSON
+      const { data: result, error: rpcError } = await supabase.rpc('admin_update_user_password', {
         target_user_id: userId,
         new_password: newPassword
       });
@@ -21,20 +21,15 @@ export const useChangeUserPassword = () => {
         throw rpcError;
       }
 
-      // Check if the result indicates success
-      const result = rpcResult as any;
-      if (!result?.success) {
-        throw new Error(result?.error || 'Falha na alteração da senha');
-      }
-
-      console.log('Password change authorized:', rpcResult);
-      return rpcResult;
+      console.log('Password change authorized:', result);
+      return result;
     },
     onSuccess: (data, variables) => {
-      console.log('Password change mutation success');
+      console.log('Password change mutation success:', data);
+      const result = data as any;
       toast({
         title: 'Senha alterada',
-        description: `A senha foi alterada com sucesso. Nova senha: ${variables.newPassword}`,
+        description: `A senha de ${result?.full_name || 'usuário'} foi alterada com sucesso.`,
       });
     },
     onError: (error: any) => {

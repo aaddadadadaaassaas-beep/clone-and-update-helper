@@ -80,7 +80,7 @@ const UsersList = () => {
     
     try {
       await changePassword.mutateAsync({ 
-        userId: selectedUserForPassword.user_id, 
+        userId: selectedUserForPassword.id, // Use profile id instead of user_id
         newPassword 
       });
       setShowPasswordDialog(false);
