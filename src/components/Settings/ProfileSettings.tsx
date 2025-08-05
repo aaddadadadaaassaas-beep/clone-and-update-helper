@@ -94,10 +94,14 @@ const ProfileSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       queryClient.invalidateQueries({ queryKey: ['user-profile-header'] });
       setIsEditing(false);
-      toast({
-        title: 'Perfil atualizado',
-        description: 'Suas informações foram atualizadas com sucesso.',
-      });
+      
+      // Só mostrar toast se houve mudança real
+      if (data) {
+        toast({
+          title: 'Perfil atualizado',
+          description: 'Suas informações foram atualizadas com sucesso.',
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Profile update error:', error);

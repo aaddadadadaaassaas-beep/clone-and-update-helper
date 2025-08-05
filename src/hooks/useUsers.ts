@@ -23,6 +23,8 @@ export const useUpdateUserRole = () => {
 
   return useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: 'owner' | 'admin' | 'employee' | 'user' }) => {
+      console.log('Updating user role:', userId, 'to:', role);
+      
       const { data, error } = await supabase
         .from('profiles')
         .update({ role })
@@ -30,7 +32,15 @@ export const useUpdateUserRole = () => {
         .select()
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Role update error:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('Nenhum usuário foi atualizado. Verifique suas permissões.');
+      }
+      
       return data;
     },
     onSuccess: () => {
