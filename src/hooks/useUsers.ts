@@ -28,7 +28,7 @@ export const useUpdateUserRole = () => {
         .update({ role })
         .eq('id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -61,7 +61,7 @@ export const useToggleUserStatus = () => {
         .update({ is_active: isActive })
         .eq('id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;

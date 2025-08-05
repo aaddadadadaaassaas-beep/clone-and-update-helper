@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsers, useUpdateUserRole, useToggleUserStatus } from '@/hooks/useUsers';
+import { useChangeUserPassword } from '@/hooks/usePasswordManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Users as UsersIcon, 
@@ -15,9 +16,13 @@ import {
   Calendar,
   MoreVertical,
   Edit,
-  Trash2
+  Trash2,
+  Key
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const roleConfig = {
   owner: { label: 'Proprietário', color: 'bg-purple-100 text-purple-800', icon: Shield },
@@ -30,9 +35,13 @@ const UsersList = () => {
   const { data: users, isLoading } = useUsers();
   const updateUserRole = useUpdateUserRole();
   const toggleUserStatus = useToggleUserStatus();
+  const changePassword = useChangeUserPassword();
   const { user: currentUser } = useAuth();
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [selectedUserForPassword, setSelectedUserForPassword] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState('');
 
   const handleRoleChange = async (userId: string, newRole: 'owner' | 'admin' | 'employee' | 'user') => {
     try {
@@ -48,6 +57,27 @@ const UsersList = () => {
     } catch (error) {
       // Error handling is done in the mutation
     }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!selectedUserForPassword || !newPassword) return;
+    
+    try {
+      await changePassword.mutateAsync({ 
+        userId: selectedUserForPassword.user_id, 
+        newPassword 
+      });
+      setShowPasswordDialog(false);
+      setNewPassword('');
+      setSelectedUserForPassword(null);
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
+  };
+
+  const openPasswordDialog = (user: any) => {
+    setSelectedUserForPassword(user);
+    setShowPasswordDialog(true);
   };
 
   if (isLoading) {
@@ -196,6 +226,12 @@ const UsersList = () => {
                               Excluir
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem
+                            onClick={() => openPasswordDialog(user)}
+                          >
+                            <Key className="h-4 w-4 mr-2" />
+                            Alterar Senha
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
@@ -206,6 +242,46 @@ const UsersList = () => {
           );
         })}
       </div>
+
+      {/* Password Change Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Senha do Usuário</DialogTitle>
+            <DialogDescription>
+              Alterando senha para: {selectedUserForPassword?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nova Senha</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Digite a nova senha"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPasswordDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handlePasswordChange}
+              disabled={!newPassword || changePassword.isPending}
+            >
+              {changePassword.isPending ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

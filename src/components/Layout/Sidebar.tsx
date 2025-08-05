@@ -134,6 +134,7 @@ const Sidebar = () => {
   
   // Get user profile to determine role
   const [userRole, setUserRole] = useState<string>('user');
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -146,6 +147,7 @@ const Sidebar = () => {
         
         if (profile) {
           setUserRole(profile.role);
+          setUserProfile(profile);
         }
       }
     };

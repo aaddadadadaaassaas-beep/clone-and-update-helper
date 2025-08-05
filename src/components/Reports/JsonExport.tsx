@@ -1,237 +1,258 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Download, FileText, Shield } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Download, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
-const JsonExport = () => {
-  const [exportType, setExportType] = useState('all');
-  const [includeComments, setIncludeComments] = useState(true);
-  const [includeAttachments, setIncludeAttachments] = useState(true);
-  const [includeHistory, setIncludeHistory] = useState(true);
-  const [includePrivateComments, setIncludePrivateComments] = useState(false);
+interface JsonExportProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const JsonExport = ({ open, onOpenChange }: JsonExportProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [dateFrom, setDateFrom] = useState<Date>();
+  const [dateTo, setDateTo] = useState<Date>();
+  const [exportType, setExportType] = useState<string>('all');
+  const [category, setCategory] = useState<string>('all');
 
   const exportMutation = useMutation({
     mutationFn: async () => {
-      // Build query based on export type
-      let ticketsQuery = supabase
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Verificar se o usuário é admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile || !['admin', 'owner'].includes(profile.role)) {
+        throw new Error('Acesso negado: apenas administradores podem exportar dados');
+      }
+
+      let query = supabase
         .from('tickets')
         .select(`
           *,
-          category:categories(*),
-          submitter:profiles!tickets_submitter_id_fkey(full_name, email, user_id),
-          assignee:profiles!tickets_assignee_id_fkey(full_name, email, user_id)
+          submitter:submitter_id(id, full_name, email),
+          assignee:assignee_id(id, full_name, email),
+          category:category_id(id, name, color),
+          comments(
+            id,
+            content,
+            is_private,
+            created_at,
+            user:user_id(id, full_name, email)
+          ),
+          attachments(
+            id,
+            filename,
+            file_size,
+            mime_type,
+            created_at
+          ),
+          ticket_history(
+            id,
+            action,
+            field_name,
+            old_value,
+            new_value,
+            description,
+            created_at,
+            user:user_id(id, full_name, email)
+          )
         `);
 
-      // Apply filters based on export type
-      switch (exportType) {
-        case 'open':
-          ticketsQuery = ticketsQuery.eq('status', 'open');
-          break;
-        case 'closed':
-          ticketsQuery = ticketsQuery.eq('status', 'closed');
-          break;
-        case 'waiting':
-          ticketsQuery = ticketsQuery.eq('status', 'waiting');
-          break;
-        case 'high-priority':
-          ticketsQuery = ticketsQuery.in('priority', ['high', 'urgent']);
-          break;
+      if (dateFrom) {
+        query = query.gte('created_at', dateFrom.toISOString());
+      }
+      if (dateTo) {
+        query = query.lte('created_at', dateTo.toISOString());
+      }
+      if (exportType !== 'all') {
+        query = query.eq('status', exportType as 'open' | 'waiting' | 'closed');
+      }
+      if (category !== 'all') {
+        query = query.eq('category_id', category);
       }
 
-      const { data: tickets, error: ticketsError } = await ticketsQuery.order('created_at', { ascending: false });
-      
-      if (ticketsError) throw ticketsError;
+      const { data, error } = await query.order('created_at', { ascending: false });
 
-      const exportData: any = {
-        metadata: {
-          exportedAt: new Date().toISOString(),
-          exportType,
-          totalTickets: tickets?.length || 0,
-          includeComments,
-          includeAttachments,
-          includeHistory,
-          includePrivateComments
+      if (error) throw error;
+
+      // Gerar arquivo JSON
+      const jsonData = {
+        export_date: new Date().toISOString(),
+        export_filters: {
+          date_from: dateFrom?.toISOString(),
+          date_to: dateTo?.toISOString(),
+          export_type: exportType,
+          category: category
         },
-        tickets: []
+        total_tickets: data?.length || 0,
+        tickets: data
       };
 
-      // Process each ticket
-      for (const ticket of tickets || []) {
-        const ticketData: any = {
-          ...ticket,
-          comments: [],
-          attachments: [],
-          history: []
-        };
+      const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
+        type: 'application/json'
+      });
 
-        // Get comments if requested
-        if (includeComments) {
-          let commentsQuery = supabase
-            .from('comments')
-            .select(`
-              *,
-              user:profiles!comments_user_id_fkey(full_name, email)
-            `)
-            .eq('ticket_id', ticket.id);
-
-          if (!includePrivateComments) {
-            commentsQuery = commentsQuery.eq('is_private', false);
-          }
-
-          const { data: comments } = await commentsQuery.order('created_at', { ascending: true });
-          ticketData.comments = comments || [];
-        }
-
-        // Get attachments if requested
-        if (includeAttachments) {
-          const { data: attachments } = await supabase
-            .from('attachments')
-            .select('*')
-            .eq('ticket_id', ticket.id)
-            .order('created_at', { ascending: true });
-          
-          ticketData.attachments = attachments || [];
-        }
-
-        // Get history if requested
-        if (includeHistory) {
-          const { data: history } = await supabase
-            .from('ticket_history')
-            .select(`
-              *,
-              user:profiles!ticket_history_user_id_fkey(full_name, email)
-            `)
-            .eq('ticket_id', ticket.id)
-            .order('created_at', { ascending: true });
-          
-          ticketData.history = history || [];
-        }
-
-        exportData.tickets.push(ticketData);
-      }
-
-      return exportData;
-    },
-    onSuccess: (data) => {
-      // Create and download JSON file
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `helpdesk-export-${format(new Date(), 'yyyy-MM-dd-HHmm')}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tickets-export-${format(new Date(), 'yyyy-MM-dd-HH-mm')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      return data;
+    },
+    onSuccess: (data) => {
       toast({
-        title: "Exportação concluída",
-        description: `${data.tickets.length} tickets foram exportados com sucesso.`,
+        title: 'Exportação concluída',
+        description: `${data?.length || 0} tickets exportados com sucesso.`,
       });
+      onOpenChange(false);
     },
     onError: (error: any) => {
       toast({
-        title: "Erro na exportação",
-        description: error.message || "Ocorreu um erro durante a exportação.",
-        variant: "destructive",
+        title: 'Erro na exportação',
+        description: error.message || 'Ocorreu um erro inesperado.',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <FileText className="h-5 w-5 mr-2" />
-          Exportar Tickets (JSON)
-        </CardTitle>
-        <CardDescription>
-          Exporte dados de tickets em formato JSON para análise ou backup
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="export-type">Tipo de Exportação</Label>
-          <Select value={exportType} onValueChange={setExportType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Tickets</SelectItem>
-              <SelectItem value="open">Tickets Abertos</SelectItem>
-              <SelectItem value="waiting">Tickets Aguardando</SelectItem>
-              <SelectItem value="closed">Tickets Fechados</SelectItem>
-              <SelectItem value="high-priority">Alta Prioridade</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            Exportar Tickets JSON
+          </DialogTitle>
+          <DialogDescription>
+            Configure os filtros para exportar dados de tickets em formato JSON.
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="space-y-4">
-          <Label>Dados para Incluir</Label>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="include-comments" 
-              checked={includeComments}
-              onCheckedChange={(checked) => setIncludeComments(checked === true)}
-            />
-            <Label htmlFor="include-comments">Comentários públicos</Label>
+          <div className="space-y-2">
+            <Label>Tipo de Exportação</Label>
+            <Select value={exportType} onValueChange={setExportType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tickets</SelectItem>
+                <SelectItem value="open">Apenas abertos</SelectItem>
+                <SelectItem value="closed">Apenas fechados</SelectItem>
+                <SelectItem value="waiting">Apenas em espera</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="include-private-comments" 
-              checked={includePrivateComments}
-              onCheckedChange={(checked) => setIncludePrivateComments(checked === true)}
-              disabled={!includeComments}
-            />
-            <Label htmlFor="include-private-comments">Comentários privados (staff)</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Data Inicial</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Data Final</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="include-attachments" 
-              checked={includeAttachments}
-              onCheckedChange={(checked) => setIncludeAttachments(checked === true)}
-            />
-            <Label htmlFor="include-attachments">Referências de anexos</Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="include-history" 
-              checked={includeHistory}
-              onCheckedChange={(checked) => setIncludeHistory(checked === true)}
-            />
-            <Label htmlFor="include-history">Histórico de alterações</Label>
+          <div className="bg-muted p-4 rounded-lg">
+            <div className="flex items-center mb-2">
+              <Shield className="h-4 w-4 mr-2 text-warning" />
+              <span className="text-sm font-medium">Dados Incluídos</span>
+            </div>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Informações completas dos tickets</li>
+              <li>• Histórico de alterações</li>
+              <li>• Comentários públicos e privados</li>
+              <li>• Referências de anexos</li>
+              <li>• Dados dos usuários envolvidos</li>
+            </ul>
           </div>
         </div>
 
-        <Button 
-          onClick={() => exportMutation.mutate()}
-          disabled={exportMutation.isPending}
-          className="w-full"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {exportMutation.isPending ? 'Exportando...' : 'Exportar JSON'}
-        </Button>
-
-        {exportMutation.isPending && (
-          <div className="text-sm text-muted-foreground">
-            <p>⚠️ Para grandes volumes de dados, a exportação pode levar alguns minutos.</p>
-            <p>O arquivo será baixado automaticamente quando concluído.</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => exportMutation.mutate()}
+            disabled={exportMutation.isPending}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {exportMutation.isPending ? 'Exportando...' : 'Exportar JSON'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
