@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTickets } from '@/hooks/useTickets';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Search, 
   Filter, 
@@ -43,9 +44,31 @@ const TicketsList = ({ view = 'all' }: TicketsListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const { data: tickets, isLoading } = useTickets();
+  const [userRole, setUserRole] = useState<string>('user');
+  
+  // Determine if we should filter by user based on role
+  const shouldFilterByUser = userRole === 'employee' || userRole === 'user';
+  const { data: tickets, isLoading } = useTickets(shouldFilterByUser);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Get user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserRole(profile.role);
+        }
+      }
+    };
+    fetchUserRole();
+  }, [user]);
 
   const filteredTickets = tickets?.filter(ticket => {
     const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

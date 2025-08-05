@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Ticket, 
   Plus, 
@@ -19,65 +22,119 @@ import {
   Download
 } from "lucide-react";
 
-const navigation = [
-  {
-    name: "Dashboard",
-    href: "/",
-    icon: BarChart3,
-    current: true
-  },
-  {
-    name: "Novo Ticket",
-    href: "/new-ticket",
-    icon: Plus,
-    current: false
-  },
-  {
-    name: "Todos os Tickets",
-    href: "/tickets",
-    icon: Ticket,
-    current: false,
-    badge: "15"
-  },
-  {
-    name: "Views",
-    href: "#",
-    icon: FileText,
-    current: false,
-    children: [
-      { name: "Abertos", href: "/tickets?status=open", icon: AlertTriangle, badge: "8" },
-      { name: "Aguardando", href: "/tickets?status=waiting", icon: Clock, badge: "3" },
-      { name: "Fechados", href: "/tickets?status=closed", icon: CheckCircle, badge: "4" },
-      { name: "Vencidos", href: "/tickets?overdue=true", icon: Archive, badge: "2" }
-    ]
-  },
-  {
-    name: "Usuários",
-    href: "/users",
-    icon: Users,
-    current: false
-  },
-  {
-    name: "Categorias",
-    href: "/categories",
-    icon: Tag,
-    current: false
-  },
-  {
-    name: "Relatórios",
-    href: "/reports",
-    icon: BarChart3,
-    current: false
-  },
-  {
-    name: "Configurações",
-    href: "/settings",
-    icon: Settings,
-    current: false
-  }
-];
+const getNavigationForRole = (userRole: string) => {
+  const baseNavigation = [
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: BarChart3,
+      current: true,
+      roles: ['admin', 'owner', 'employee', 'user']
+    },
+    {
+      name: "Novo Ticket",
+      href: "/new-ticket",
+      icon: Plus,
+      current: false,
+      roles: ['admin', 'owner', 'employee', 'user']
+    },
+    {
+      name: "Meus Tickets",
+      href: "/my-tickets",
+      icon: Ticket,
+      current: false,
+      badge: "15",
+      roles: ['employee', 'user']
+    },
+    {
+      name: "Todos os Tickets",
+      href: "/tickets",
+      icon: Ticket,
+      current: false,
+      badge: "15",
+      roles: ['admin', 'owner']
+    },
+    {
+      name: "Views",
+      href: "#",
+      icon: FileText,
+      current: false,
+      roles: ['admin', 'owner', 'employee'],
+      children: [
+        { name: "Abertos", href: "/tickets/waiting", icon: AlertTriangle, badge: "8", roles: ['admin', 'owner', 'employee'] },
+        { name: "Aguardando", href: "/tickets/waiting", icon: Clock, badge: "3", roles: ['admin', 'owner', 'employee'] },
+        { name: "Fechados", href: "/tickets/closed", icon: CheckCircle, badge: "4", roles: ['admin', 'owner', 'employee'] },
+        { name: "Vencidos", href: "/tickets?overdue=true", icon: Archive, badge: "2", roles: ['admin', 'owner'] }
+      ]
+    },
+    {
+      name: "Usuários",
+      href: "/users",
+      icon: Users,
+      current: false,
+      roles: ['admin', 'owner']
+    },
+    {
+      name: "Categorias",
+      href: "/categories",
+      icon: Tag,
+      current: false,
+      roles: ['admin', 'owner']
+    },
+    {
+      name: "Relatórios",
+      href: "/reports",
+      icon: BarChart3,
+      current: false,
+      roles: ['admin', 'owner']
+    },
+    {
+      name: "Configurações",
+      href: "/settings",
+      icon: Settings,
+      current: false,
+      roles: ['admin', 'owner']
+    }
+  ];
+
+  return baseNavigation.filter(item => {
+    if (!item.roles || item.roles.includes(userRole)) {
+      if (item.children) {
+        item.children = item.children.filter(child => 
+          !child.roles || child.roles.includes(userRole)
+        );
+      }
+      return true;
+    }
+    return false;
+  });
+};
 
 const Sidebar = () => {
+  const { user } = useAuth();
+  
+  // Get user profile to determine role
+  const [userRole, setUserRole] = useState<string>('user');
+  
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserRole(profile.role);
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [user]);
+
+  const navigation = getNavigationForRole(userRole);
+
   return (
     <div className="flex h-full w-72 flex-col border-r bg-background">
       {/* Logo */}

@@ -2,19 +2,41 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export const useTickets = () => {
+export const useTickets = (filterByUser = false) => {
   return useQuery({
-    queryKey: ['tickets'],
+    queryKey: ['tickets', filterByUser],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tickets')
         .select(`
           *,
           category:categories(*),
           submitter:profiles!tickets_submitter_id_fkey(full_name, email, user_id),
           assignee:profiles!tickets_assignee_id_fkey(full_name, email, user_id)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (filterByUser) {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Get user profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profile) {
+            // If employee or user role, filter to only their tickets
+            if (profile.role === 'employee' || profile.role === 'user') {
+              query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+            }
+            // Admin and owner can see all tickets (no filter)
+          }
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         throw error;
