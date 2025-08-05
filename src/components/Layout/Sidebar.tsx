@@ -136,7 +136,7 @@ const Sidebar = () => {
           .from('profiles')
           .select('role')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         
         if (profile) {
           setUserRole(profile.role);
@@ -157,7 +157,7 @@ const Sidebar = () => {
         .from('profiles')
         .select('id, role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!profile) return {};
 

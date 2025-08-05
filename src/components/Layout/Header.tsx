@@ -41,7 +41,7 @@ const Header = ({ title, subtitle }: HeaderProps) => {
         .from('profiles')
         .select('full_name, avatar_url')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
