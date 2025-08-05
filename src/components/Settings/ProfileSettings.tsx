@@ -59,15 +59,21 @@ const ProfileSettings = () => {
       console.log('Updating profile with data:', data);
       console.log('User role:', profile?.role);
 
-      // Create the update data object
-      const updateData = {
-        full_name: data.full_name,
-        email: data.email,
-        organization: data.organization,
-        avatar_url: data.avatar_url
-      };
+      // Create the update data object - only include changed fields
+      const updateData: any = {};
+      
+      if (data.full_name !== profile?.full_name) updateData.full_name = data.full_name;
+      if (data.email !== profile?.email) updateData.email = data.email;
+      if (data.organization !== profile?.organization) updateData.organization = data.organization;
+      if (data.avatar_url !== profile?.avatar_url) updateData.avatar_url = data.avatar_url;
 
-      console.log('Update data:', updateData);
+      console.log('Update data (only changed fields):', updateData);
+
+      // If nothing changed, don't make the call
+      if (Object.keys(updateData).length === 0) {
+        console.log('No changes detected, skipping update');
+        return profile;
+      }
 
       const { data: result, error } = await supabase
         .from('profiles')
@@ -95,13 +101,11 @@ const ProfileSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile-header'] });
       setIsEditing(false);
       
-      // Só mostrar toast se houve mudança real
-      if (data) {
-        toast({
-          title: 'Perfil atualizado',
-          description: 'Suas informações foram atualizadas com sucesso.',
-        });
-      }
+      // Always show toast on successful update
+      toast({
+        title: 'Perfil atualizado',
+        description: 'Suas informações foram atualizadas com sucesso.',
+      });
     },
     onError: (error: any) => {
       console.error('Profile update error:', error);
