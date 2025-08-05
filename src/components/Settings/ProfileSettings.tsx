@@ -51,14 +51,19 @@ const ProfileSettings = () => {
     }
   }, [profile]);
 
-  // Update profile mutation
+  // Update profile mutation (only avatar for regular users)
   const updateProfile = useMutation({
     mutationFn: async (data: typeof formData) => {
       if (!user) throw new Error('No user found');
 
+      // Regular users can only update avatar
+      const updateData = profile?.role === 'admin' || profile?.role === 'owner' 
+        ? data 
+        : { avatar_url: data.avatar_url };
+
       const { error } = await supabase
         .from('profiles')
-        .update(data)
+        .update(updateData)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -137,7 +142,7 @@ const ProfileSettings = () => {
                 {formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {isEditing && (
+            {(isEditing || profile?.role === 'user' || profile?.role === 'employee') && (
               <div>
                 <Label htmlFor="avatar-upload" className="cursor-pointer">
                   <Button type="button" variant="outline" size="sm" asChild>
@@ -166,7 +171,7 @@ const ProfileSettings = () => {
                 id="full_name"
                 value={formData.full_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                disabled={!isEditing}
+                disabled={!isEditing || (profile?.role !== 'admin' && profile?.role !== 'owner')}
               />
             </div>
 
@@ -177,7 +182,7 @@ const ProfileSettings = () => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                disabled={!isEditing}
+                disabled={!isEditing || (profile?.role !== 'admin' && profile?.role !== 'owner')}
               />
             </div>
 
@@ -187,7 +192,7 @@ const ProfileSettings = () => {
                 id="organization"
                 value={formData.organization}
                 onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
-                disabled={!isEditing}
+                disabled={!isEditing || (profile?.role !== 'admin' && profile?.role !== 'owner')}
                 placeholder="Opcional"
               />
             </div>

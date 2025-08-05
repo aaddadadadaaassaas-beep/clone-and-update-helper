@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export const useTickets = (view?: 'all' | 'my-tickets' | 'waiting' | 'closed' | 'high-priority') => {
+export const useTickets = (view?: 'all' | 'my-tickets' | 'waiting' | 'closed' | 'high-priority' | 'my-tickets-open' | 'my-tickets-waiting' | 'my-tickets-closed') => {
   return useQuery({
     queryKey: ['tickets', view],
     queryFn: async () => {
@@ -46,6 +46,24 @@ export const useTickets = (view?: 'all' | 'my-tickets' | 'waiting' | 'closed' | 
             if (profile.role === 'admin' || profile.role === 'owner') {
               query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
             }
+            break;
+          case 'my-tickets-open':
+            if (profile.role === 'admin' || profile.role === 'owner') {
+              query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+            }
+            query = query.eq('status', 'open');
+            break;
+          case 'my-tickets-waiting':
+            if (profile.role === 'admin' || profile.role === 'owner') {
+              query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+            }
+            query = query.eq('status', 'waiting');
+            break;
+          case 'my-tickets-closed':
+            if (profile.role === 'admin' || profile.role === 'owner') {
+              query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+            }
+            query = query.eq('status', 'closed');
             break;
           case 'waiting':
             query = query.eq('status', 'waiting');

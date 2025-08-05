@@ -9,6 +9,7 @@ import RoleProtectedRoute from "@/components/Auth/RoleProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Tickets from "./pages/Tickets";
+import MyTickets from "./pages/MyTickets";
 import NewTicket from "./pages/NewTicket";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
@@ -45,7 +46,7 @@ const App = () => (
             } />
             <Route path="/my-tickets" element={
               <ProtectedRoute>
-                <Tickets />
+                <MyTickets />
               </ProtectedRoute>
             } />
             <Route path="/tickets/waiting" element={

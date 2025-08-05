@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsers, useUpdateUserRole, useToggleUserStatus } from '@/hooks/useUsers';
 import { useChangeUserPassword } from '@/hooks/usePasswordManagement';
 import { useAuth } from '@/contexts/AuthContext';
+import AddUserDialog from './AddUserDialog';
 import { 
   Users as UsersIcon, 
   Shield, 
@@ -42,6 +43,7 @@ const UsersList = () => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
 
   const handleRoleChange = async (userId: string, newRole: 'owner' | 'admin' | 'employee' | 'user') => {
     try {
@@ -110,7 +112,7 @@ const UsersList = () => {
             {users?.length || 0} usuários no sistema
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowAddUserDialog(true)}>
           <UsersIcon className="h-4 w-4 mr-2" />
           Adicionar Usuário
         </Button>
@@ -282,6 +284,12 @@ const UsersList = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add User Dialog */}
+      <AddUserDialog 
+        open={showAddUserDialog} 
+        onOpenChange={setShowAddUserDialog}
+      />
     </div>
   );
 };

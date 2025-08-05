@@ -28,7 +28,7 @@ export const useUpdateUserRole = () => {
         .update({ role })
         .eq('id', userId)
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
       return data;

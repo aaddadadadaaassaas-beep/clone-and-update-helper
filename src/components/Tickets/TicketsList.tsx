@@ -37,7 +37,7 @@ const priorityConfig = {
 };
 
 interface TicketsListProps {
-  view?: 'all' | 'my-tickets' | 'waiting' | 'closed' | 'high-priority';
+  view?: 'all' | 'my-tickets' | 'waiting' | 'closed' | 'high-priority' | 'my-tickets-open' | 'my-tickets-waiting' | 'my-tickets-closed';
 }
 
 const TicketsList = ({ view = 'all' }: TicketsListProps) => {
