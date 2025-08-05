@@ -85,6 +85,13 @@ const getNavigationForRole = (userRole: string) => {
       roles: ['admin', 'owner']
     },
     {
+      name: "Comunidade",
+      href: "/community",
+      icon: Users,
+      current: false,
+      roles: ['admin', 'owner', 'employee', 'user']
+    },
+    {
       name: "Base de Conhecimento",
       href: "/knowledge-base",
       icon: BookOpen,

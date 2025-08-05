@@ -3,6 +3,7 @@ import NotificationSettings from "@/components/Settings/NotificationSettings";
 import PredefinedResponses from "@/components/Settings/PredefinedResponses";
 import ProfileSettings from "@/components/Settings/ProfileSettings";
 import AutomationRules from "@/components/Settings/AutomationRules";
+import MFASettings from "@/components/Settings/MFASettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -133,61 +134,7 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">
-          {/* Configurações de Segurança */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="h-5 w-5" />
-                <span>Segurança e Autenticação</span>
-              </CardTitle>
-              <CardDescription>
-                Configurações de segurança e autenticação multifator
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Exigir autenticação multifator (MFA)</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Obrigar MFA para todos os usuários
-                  </p>
-                </div>
-                <Switch />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Permitir login com Google/LinkedIn</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Habilitar autenticação OAuth
-                  </p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="session-timeout">Timeout de sessão (minutos)</Label>
-                <Input 
-                  id="session-timeout" 
-                  type="number" 
-                  defaultValue="60" 
-                  min="5"
-                  max="480"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleSave} className="min-w-32">
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar Configurações
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <MFASettings />
         </TabsContent>
       </Tabs>
     </Layout>
