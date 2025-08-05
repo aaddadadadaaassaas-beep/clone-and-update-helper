@@ -2,10 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export const useTickets = (filterByUser = false) => {
+export const useTickets = (view?: 'all' | 'my-tickets' | 'waiting' | 'closed' | 'high-priority') => {
   return useQuery({
-    queryKey: ['tickets', filterByUser],
+    queryKey: ['tickets', view],
     queryFn: async () => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Get user profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
       let query = supabase
         .from('tickets')
         .select(`
@@ -15,24 +28,34 @@ export const useTickets = (filterByUser = false) => {
           assignee:profiles!tickets_assignee_id_fkey(full_name, email, user_id)
         `);
 
-      if (filterByUser) {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Get user profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, role')
-            .eq('user_id', user.id)
-            .single();
+      // Apply role-based filtering
+      if (profile.role === 'user') {
+        // Users can only see their own tickets (submitted by them)
+        query = query.eq('submitter_id', profile.id);
+      } else if (profile.role === 'employee') {
+        // Employees can see tickets submitted by them or assigned to them
+        query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
+      }
+      // Admin and owner can see all tickets (no additional filter)
 
-          if (profile) {
-            // If employee or user role, filter to only their tickets
-            if (profile.role === 'employee' || profile.role === 'user') {
+      // Apply view-specific filters if provided
+      if (view) {
+        switch (view) {
+          case 'my-tickets':
+            // For my-tickets view, show tickets user is involved in
+            if (profile.role === 'admin' || profile.role === 'owner') {
               query = query.or(`submitter_id.eq.${profile.id},assignee_id.eq.${profile.id}`);
             }
-            // Admin and owner can see all tickets (no filter)
-          }
+            break;
+          case 'waiting':
+            query = query.eq('status', 'waiting');
+            break;
+          case 'closed':
+            query = query.eq('status', 'closed');
+            break;
+          case 'high-priority':
+            query = query.in('priority', ['high', 'urgent']);
+            break;
         }
       }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,11 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, User, Calendar, Clock, MessageSquare, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout/Layout';
 import CommentsSection from '@/components/Tickets/CommentsSection';
 import AttachmentsList from '@/components/Tickets/AttachmentsList';
 import FileUpload from '@/components/Tickets/FileUpload';
 import TicketHistory from '@/components/Tickets/TicketHistory';
+import TicketDuplication from '@/components/Tickets/TicketDuplication';
+import TicketReopen from '@/components/Tickets/TicketReopen';
 import { useUsers } from '@/hooks/useUsers';
 
 const TicketDetails = () => {
@@ -25,7 +28,27 @@ const TicketDetails = () => {
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [userRole, setUserRole] = useState<string>('user');
+  const { user } = useAuth();
   const { data: users } = useUsers();
+
+  // Get user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserRole(profile.role);
+        }
+      }
+    };
+    fetchUserRole();
+  }, [user]);
 
   const { data: ticket, isLoading } = useQuery({
     queryKey: ['ticket', id],
@@ -250,15 +273,17 @@ const TicketDetails = () => {
                     className="min-h-[100px]"
                   />
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={isPrivate}
-                        onChange={(e) => setIsPrivate(e.target.checked)}
-                        className="rounded"
-                      />
-                      <span className="text-sm">Comentário privado</span>
-                    </label>
+                    {(userRole === 'admin' || userRole === 'owner' || userRole === 'employee') && (
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={isPrivate}
+                          onChange={(e) => setIsPrivate(e.target.checked)}
+                          className="rounded"
+                        />
+                        <span className="text-sm">Comentário privado</span>
+                      </label>
+                    )}
                     <Button onClick={handleAddComment} disabled={!comment.trim()}>
                       Adicionar Comentário
                     </Button>
@@ -273,80 +298,97 @@ const TicketDetails = () => {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {/* Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Ações</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Status */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Select value={ticket.status} onValueChange={handleStatusUpdate}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">Aberto</SelectItem>
-                      <SelectItem value="waiting">Aguardando</SelectItem>
-                      <SelectItem value="closed">Fechado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Actions - Only for admin, owner, and employee */}
+            {(userRole === 'admin' || userRole === 'owner' || userRole === 'employee') && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ações</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Status */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Status</label>
+                    <Select value={ticket.status} onValueChange={handleStatusUpdate}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Aberto</SelectItem>
+                        <SelectItem value="waiting">Aguardando</SelectItem>
+                        <SelectItem value="closed">Fechado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Priority */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Prioridade</label>
-                  <Select value={ticket.priority} onValueChange={handlePriorityUpdate}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Baixa</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="high">Alta</SelectItem>
-                      <SelectItem value="urgent">Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Priority */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Prioridade</label>
+                    <Select value={ticket.priority} onValueChange={handlePriorityUpdate}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
+                        <SelectItem value="urgent">Urgente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Assignee */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Responsável</label>
-                  <Select 
-                    value={ticket.assignee_id || 'unassigned'} 
-                    onValueChange={handleAssigneeUpdate}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Não atribuído</SelectItem>
-                      {users?.filter(user => ['admin', 'owner', 'employee'].includes(user.role))
-                        .map(user => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.full_name}
-                          </SelectItem>
-                        ))
-                      }
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Assignee - Only for admin and owner */}
+                  {(userRole === 'admin' || userRole === 'owner') && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Responsável</label>
+                      <Select 
+                        value={ticket.assignee_id || 'unassigned'} 
+                        onValueChange={handleAssigneeUpdate}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned">Não atribuído</SelectItem>
+                          {users?.filter(user => ['admin', 'owner', 'employee'].includes(user.role))
+                            .map(user => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.full_name}
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
-                {/* Due Date */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Data de Vencimento</label>
-                  <Input
-                    type="datetime-local"
-                    value={ticket.due_date ? new Date(ticket.due_date).toISOString().slice(0, 16) : ''}
-                    onChange={(e) => {
-                      const dueDate = e.target.value ? new Date(e.target.value).toISOString() : null;
-                      updateTicketMutation.mutate({ due_date: dueDate });
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                  {/* Due Date */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Data de Vencimento</label>
+                    <Input
+                      type="datetime-local"
+                      value={ticket.due_date ? new Date(ticket.due_date).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => {
+                        const dueDate = e.target.value ? new Date(e.target.value).toISOString() : null;
+                        updateTicketMutation.mutate({ due_date: dueDate });
+                      }}
+                    />
+                  </div>
+
+                  {/* Special Actions */}
+                  <div className="pt-4 space-y-2">
+                    <TicketDuplication 
+                      originalTicketId={ticket.id}
+                      onTicketCreated={() => queryClient.invalidateQueries({ queryKey: ['ticket', id] })}
+                    />
+                    <TicketReopen 
+                      ticketId={ticket.id}
+                      currentStatus={ticket.status}
+                      onTicketReopened={() => queryClient.invalidateQueries({ queryKey: ['ticket', id] })}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Details */}
             <Card>

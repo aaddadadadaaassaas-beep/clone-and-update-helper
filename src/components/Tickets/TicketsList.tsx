@@ -46,9 +46,7 @@ const TicketsList = ({ view = 'all' }: TicketsListProps) => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [userRole, setUserRole] = useState<string>('user');
   
-  // Determine if we should filter by user based on role
-  const shouldFilterByUser = userRole === 'employee' || userRole === 'user';
-  const { data: tickets, isLoading } = useTickets(shouldFilterByUser);
+  const { data: tickets, isLoading } = useTickets(view);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -77,20 +75,13 @@ const TicketsList = ({ view = 'all' }: TicketsListProps) => {
     const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
     
-    // Apply view filters
-    switch (view) {
-      case 'my-tickets':
-        return matchesSearch && matchesStatus && matchesPriority && 
-               (ticket.submitter?.user_id === user?.id || ticket.assignee?.user_id === user?.id);
-      case 'waiting':
-        return matchesSearch && matchesPriority && ticket.status === 'waiting';
-      case 'closed':
-        return matchesSearch && matchesPriority && ticket.status === 'closed';
-      case 'high-priority':
-        return matchesSearch && matchesStatus && (ticket.priority === 'high' || ticket.priority === 'urgent');
-      default:
-        return matchesSearch && matchesStatus && matchesPriority;
+    // Only apply additional filters for 'all' view since view-specific filtering is now handled in the hook
+    if (view === 'all') {
+      return matchesSearch && matchesStatus && matchesPriority;
     }
+    
+    // For specific views, only apply search filter as status/priority filters are handled by the hook
+    return matchesSearch;
   });
 
   const getViewTitle = () => {
