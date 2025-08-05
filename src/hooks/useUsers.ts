@@ -61,7 +61,7 @@ export const useToggleUserStatus = () => {
         .update({ is_active: isActive })
         .eq('id', userId)
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
       return data;
@@ -69,13 +69,88 @@ export const useToggleUserStatus = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast({
-        title: data.is_active ? 'Usuário ativado' : 'Usuário desativado',
-        description: `O usuário foi ${data.is_active ? 'ativado' : 'desativado'} com sucesso.`,
+        title: data?.is_active ? 'Usuário ativado' : 'Usuário desativado',
+        description: `O usuário foi ${data?.is_active ? 'ativado' : 'desativado'} com sucesso.`,
       });
     },
     onError: (error: any) => {
       toast({
         title: 'Erro ao alterar status',
+        description: error.message || 'Ocorreu um erro inesperado.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      // First get the user_id from the profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Delete the auth user (this will cascade to delete the profile)
+      const { error: authError } = await supabase.auth.admin.deleteUser(profile.user_id);
+      
+      if (authError) throw authError;
+
+      return profile;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({
+        title: 'Usuário excluído',
+        description: `${data.full_name} foi removido do sistema.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro ao excluir usuário',
+        description: error.message || 'Ocorreu um erro inesperado.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useEditUser = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ userId, userData }: { 
+      userId: string; 
+      userData: { full_name: string; email: string; organization?: string } 
+    }) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(userData)
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({
+        title: 'Usuário editado',
+        description: 'As informações do usuário foram atualizadas com sucesso.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro ao editar usuário',
         description: error.message || 'Ocorreu um erro inesperado.',
         variant: 'destructive',
       });

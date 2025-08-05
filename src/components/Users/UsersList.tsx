@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUsers, useUpdateUserRole, useToggleUserStatus } from '@/hooks/useUsers';
+import { useUsers, useUpdateUserRole, useToggleUserStatus, useDeleteUser, useEditUser } from '@/hooks/useUsers';
 import { useChangeUserPassword } from '@/hooks/usePasswordManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import AddUserDialog from './AddUserDialog';
@@ -36,13 +36,24 @@ const UsersList = () => {
   const { data: users, isLoading } = useUsers();
   const updateUserRole = useUpdateUserRole();
   const toggleUserStatus = useToggleUserStatus();
+  const deleteUser = useDeleteUser();
+  const editUser = useEditUser();
   const changePassword = useChangeUserPassword();
   const { user: currentUser } = useAuth();
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<any>(null);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<any>(null);
+  const [selectedUserForDelete, setSelectedUserForDelete] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [editFormData, setEditFormData] = useState({
+    full_name: '',
+    email: '',
+    organization: ''
+  });
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
 
   const handleRoleChange = async (userId: string, newRole: 'owner' | 'admin' | 'employee' | 'user') => {
@@ -80,6 +91,48 @@ const UsersList = () => {
   const openPasswordDialog = (user: any) => {
     setSelectedUserForPassword(user);
     setShowPasswordDialog(true);
+  };
+
+  const openEditDialog = (user: any) => {
+    setSelectedUserForEdit(user);
+    setEditFormData({
+      full_name: user.full_name || '',
+      email: user.email || '',
+      organization: user.organization || ''
+    });
+    setShowEditDialog(true);
+  };
+
+  const openDeleteDialog = (user: any) => {
+    setSelectedUserForDelete(user);
+    setShowDeleteDialog(true);
+  };
+
+  const handleEdit = async () => {
+    if (!selectedUserForEdit) return;
+    
+    try {
+      await editUser.mutateAsync({
+        userId: selectedUserForEdit.id,
+        userData: editFormData
+      });
+      setShowEditDialog(false);
+      setSelectedUserForEdit(null);
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedUserForDelete) return;
+    
+    try {
+      await deleteUser.mutateAsync(selectedUserForDelete.id);
+      setShowDeleteDialog(false);
+      setSelectedUserForDelete(null);
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
   };
 
   if (isLoading) {
@@ -202,7 +255,7 @@ const UsersList = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditDialog(user)}>
                             <Edit className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
@@ -223,7 +276,10 @@ const UsersList = () => {
                             )}
                           </DropdownMenuItem>
                           {user.role !== 'owner' && user.role !== 'admin' && (
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => openDeleteDialog(user)}
+                            >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Excluir
                             </DropdownMenuItem>
@@ -280,6 +336,93 @@ const UsersList = () => {
               disabled={!newPassword || changePassword.isPending}
             >
               {changePassword.isPending ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Editando informações de: {selectedUserForEdit?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editFullName">Nome Completo</Label>
+              <Input
+                id="editFullName"
+                value={editFormData.full_name}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editEmail">Email</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editOrganization">Organização</Label>
+              <Input
+                id="editOrganization"
+                value={editFormData.organization}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, organization: e.target.value }))}
+                placeholder="Organização (opcional)"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleEdit}
+              disabled={!editFormData.full_name || !editFormData.email || editUser.isPending}
+            >
+              {editUser.isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o usuário <strong>{selectedUserForDelete?.full_name}</strong>?
+              Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteUser.isPending}
+            >
+              {deleteUser.isPending ? 'Excluindo...' : 'Excluir'}
             </Button>
           </DialogFooter>
         </DialogContent>
