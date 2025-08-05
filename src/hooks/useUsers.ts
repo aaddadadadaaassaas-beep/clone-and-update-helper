@@ -28,7 +28,7 @@ export const useUpdateUserRole = () => {
         .update({ role })
         .eq('id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -61,7 +61,7 @@ export const useToggleUserStatus = () => {
         .update({ is_active: isActive })
         .eq('id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -89,19 +89,19 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: async (userId: string) => {
-      // First get the user_id from the profile
-      const { data: profile, error: profileError } = await supabase
+      // Use the safe delete function from the database
+      const { data, error } = await supabase.rpc('delete_user_safely', {
+        target_user_id: userId
+      });
+
+      if (error) throw error;
+
+      // Get profile name for toast message
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('user_id, full_name')
+        .select('full_name')
         .eq('id', userId)
-        .single();
-
-      if (profileError) throw profileError;
-
-      // Delete the auth user (this will cascade to delete the profile)
-      const { error: authError } = await supabase.auth.admin.deleteUser(profile.user_id);
-      
-      if (authError) throw authError;
+        .maybeSingle();
 
       return profile;
     },
@@ -136,7 +136,7 @@ export const useEditUser = () => {
         .update(userData)
         .eq('id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
