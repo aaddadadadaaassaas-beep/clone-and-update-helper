@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Ticket, 
   Plus, 
@@ -52,7 +53,7 @@ const getNavigationForRole = (userRole: string) => {
       icon: Ticket,
       current: false,
       badge: "15",
-      roles: ['admin', 'owner']
+      roles: ['admin', 'owner', 'employee']
     },
     {
       name: "Views",
@@ -61,10 +62,10 @@ const getNavigationForRole = (userRole: string) => {
       current: false,
       roles: ['admin', 'owner', 'employee'],
       children: [
-        { name: "Abertos", href: "/tickets/waiting", icon: AlertTriangle, badge: "8", roles: ['admin', 'owner', 'employee'] },
+        { name: "Abertos", href: "/tickets", icon: AlertTriangle, badge: "8", roles: ['admin', 'owner', 'employee'] },
         { name: "Aguardando", href: "/tickets/waiting", icon: Clock, badge: "3", roles: ['admin', 'owner', 'employee'] },
         { name: "Fechados", href: "/tickets/closed", icon: CheckCircle, badge: "4", roles: ['admin', 'owner', 'employee'] },
-        { name: "Vencidos", href: "/tickets?overdue=true", icon: Archive, badge: "2", roles: ['admin', 'owner'] }
+        { name: "Prioritários", href: "/tickets/high-priority", icon: Archive, badge: "2", roles: ['admin', 'owner', 'employee'] }
       ]
     },
     {
@@ -112,6 +113,8 @@ const getNavigationForRole = (userRole: string) => {
 
 const Sidebar = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Get user profile to determine role
   const [userRole, setUserRole] = useState<string>('user');
@@ -135,6 +138,12 @@ const Sidebar = () => {
 
   const navigation = getNavigationForRole(userRole);
 
+  const isCurrentPath = (href: string) => {
+    if (href === '/' && location.pathname === '/') return true;
+    if (href !== '/' && location.pathname.startsWith(href)) return true;
+    return false;
+  };
+
   return (
     <div className="flex h-full w-72 flex-col border-r bg-background">
       {/* Logo */}
@@ -156,22 +165,20 @@ const Sidebar = () => {
           {navigation.map((item) => (
             <div key={item.name}>
               <Button
-                variant={item.current ? "secondary" : "ghost"}
+                variant={isCurrentPath(item.href) ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start",
-                  item.current && "bg-secondary"
+                  isCurrentPath(item.href) && "bg-secondary"
                 )}
-                asChild
+                onClick={() => navigate(item.href)}
               >
-                <a href={item.href}>
-                  <item.icon className="mr-3 h-4 w-4" />
-                  {item.name}
-                  {item.badge && (
-                    <Badge variant="secondary" className="ml-auto">
-                      {item.badge}
-                    </Badge>
-                  )}
-                </a>
+                <item.icon className="mr-3 h-4 w-4" />
+                {item.name}
+                {item.badge && (
+                  <Badge variant="secondary" className="ml-auto">
+                    {item.badge}
+                  </Badge>
+                )}
               </Button>
 
               {/* Sub-navigation */}
@@ -180,20 +187,18 @@ const Sidebar = () => {
                   {item.children.map((child) => (
                     <Button
                       key={child.name}
-                      variant="ghost"
+                      variant={isCurrentPath(child.href) ? "secondary" : "ghost"}
                       size="sm"
                       className="w-full justify-start text-sm"
-                      asChild
+                      onClick={() => navigate(child.href)}
                     >
-                      <a href={child.href}>
-                        <child.icon className="mr-2 h-3 w-3" />
-                        {child.name}
-                        {child.badge && (
-                          <Badge variant="outline" className="ml-auto text-xs">
-                            {child.badge}
-                          </Badge>
-                        )}
-                      </a>
+                      <child.icon className="mr-2 h-3 w-3" />
+                      {child.name}
+                      {child.badge && (
+                        <Badge variant="outline" className="ml-auto text-xs">
+                          {child.badge}
+                        </Badge>
+                      )}
                     </Button>
                   ))}
                 </div>

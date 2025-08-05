@@ -201,15 +201,15 @@ const TicketsList = ({ view = 'all' }: TicketsListProps) => {
           filteredTickets?.map((ticket) => {
             const StatusIcon = statusConfig[ticket.status].icon;
             return (
-              <Card key={ticket.id} className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card key={ticket.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-3">
+                    <div 
+                      className="flex-1 space-y-3 cursor-pointer"
+                      onClick={() => handleViewTicket(ticket.id)}
+                    >
                       <div className="flex items-center gap-3">
-                        <h3 
-                          className="font-semibold text-lg hover:text-primary"
-                          onClick={() => handleViewTicket(ticket.id)}
-                        >
+                        <h3 className="font-semibold text-lg hover:text-primary">
                           {ticket.title}
                         </h3>
                         <Badge className={statusConfig[ticket.status].color}>
@@ -256,15 +256,17 @@ const TicketsList = ({ view = 'all' }: TicketsListProps) => {
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-background border shadow-lg z-50">
                         <DropdownMenuItem onClick={() => handleViewTicket(ticket.id)}>
                           <Eye className="h-4 w-4 mr-2" />
                           Visualizar
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/tickets/${ticket.id}/edit`)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
+                        {(userRole === 'admin' || userRole === 'owner' || userRole === 'employee') && (
+                          <DropdownMenuItem onClick={() => navigate(`/tickets/${ticket.id}/edit`)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

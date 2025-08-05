@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import RoleProtectedRoute from "@/components/Auth/RoleProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Tickets from "./pages/Tickets";
@@ -14,6 +15,7 @@ import Settings from "./pages/Settings";
 import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
 import Login from "./pages/Login";
+import TicketDetails from "./pages/TicketDetails";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,31 @@ const App = () => (
                 <Tickets />
               </ProtectedRoute>
             } />
+            <Route path="/tickets/:id" element={
+              <ProtectedRoute>
+                <TicketDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-tickets" element={
+              <ProtectedRoute>
+                <Tickets />
+              </ProtectedRoute>
+            } />
+            <Route path="/tickets/waiting" element={
+              <ProtectedRoute>
+                <Tickets />
+              </ProtectedRoute>
+            } />
+            <Route path="/tickets/closed" element={
+              <ProtectedRoute>
+                <Tickets />
+              </ProtectedRoute>
+            } />
+            <Route path="/tickets/high-priority" element={
+              <ProtectedRoute>
+                <Tickets />
+              </ProtectedRoute>
+            } />
             <Route path="/new-ticket" element={
               <ProtectedRoute>
                 <NewTicket />
@@ -43,22 +70,30 @@ const App = () => (
             } />
             <Route path="/users" element={
               <ProtectedRoute>
-                <Users />
+                <RoleProtectedRoute allowedRoles={['admin', 'owner']}>
+                  <Users />
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="/categories" element={
               <ProtectedRoute>
-                <Categories />
+                <RoleProtectedRoute allowedRoles={['admin', 'owner']}>
+                  <Categories />
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="/reports" element={
               <ProtectedRoute>
-                <Reports />
+                <RoleProtectedRoute allowedRoles={['admin', 'owner']}>
+                  <Reports />
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute>
-                <Settings />
+                <RoleProtectedRoute allowedRoles={['admin', 'owner']}>
+                  <Settings />
+                </RoleProtectedRoute>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
