@@ -51,12 +51,12 @@ const ProfileSettings = () => {
     }
   }, [profile]);
 
-  // Update profile mutation (only avatar for regular users)
+  // Update profile mutation
   const updateProfile = useMutation({
     mutationFn: async (data: typeof formData) => {
       if (!user) throw new Error('No user found');
 
-      // Regular users can only update avatar
+      // Admins can update everything, regular users only avatar
       const updateData = profile?.role === 'admin' || profile?.role === 'owner' 
         ? data 
         : { avatar_url: data.avatar_url };
@@ -171,7 +171,7 @@ const ProfileSettings = () => {
                 id="full_name"
                 value={formData.full_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                disabled={!isEditing || (profile?.role !== 'admin' && profile?.role !== 'owner')}
+                disabled={!isEditing}
               />
             </div>
 
@@ -182,7 +182,7 @@ const ProfileSettings = () => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                disabled={!isEditing || (profile?.role !== 'admin' && profile?.role !== 'owner')}
+                disabled={!isEditing}
               />
             </div>
 
@@ -192,7 +192,7 @@ const ProfileSettings = () => {
                 id="organization"
                 value={formData.organization}
                 onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
-                disabled={!isEditing || (profile?.role !== 'admin' && profile?.role !== 'owner')}
+                disabled={!isEditing}
                 placeholder="Opcional"
               />
             </div>

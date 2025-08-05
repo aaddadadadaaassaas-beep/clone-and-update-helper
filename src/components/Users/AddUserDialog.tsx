@@ -26,29 +26,31 @@ const AddUserDialog = ({ open, onOpenChange }: AddUserDialogProps) => {
 
   const createUser = useMutation({
     mutationFn: async (userData: typeof formData) => {
-      // First create the auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Create user profile directly
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.full_name
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: userData.full_name
+          }
         }
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error('Falha ao criar usuário');
 
-      // Then create/update the profile
+      // Update the profile with additional data
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: authData.user.id,
-          email: userData.email,
+        .update({
           full_name: userData.full_name,
           organization: userData.organization,
           role: userData.role,
           is_active: true
-        });
+        })
+        .eq('user_id', authData.user.id);
 
       if (profileError) throw profileError;
 
