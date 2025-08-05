@@ -363,7 +363,7 @@ export type Database = {
           id: string
           priority: Database["public"]["Enums"]["ticket_priority"]
           status: Database["public"]["Enums"]["ticket_status"]
-          submitter_id: string
+          submitter_id: string | null
           title: string
           updated_at: string
         }
@@ -377,7 +377,7 @@ export type Database = {
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
           status?: Database["public"]["Enums"]["ticket_status"]
-          submitter_id: string
+          submitter_id?: string | null
           title: string
           updated_at?: string
         }
@@ -391,7 +391,7 @@ export type Database = {
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
           status?: Database["public"]["Enums"]["ticket_status"]
-          submitter_id?: string
+          submitter_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -431,6 +431,16 @@ export type Database = {
           p_title: string
           p_message: string
           p_type?: string
+        }
+        Returns: string
+      }
+      create_user_as_admin: {
+        Args: {
+          user_email: string
+          user_password: string
+          user_full_name: string
+          user_role?: string
+          user_organization?: string
         }
         Returns: string
       }

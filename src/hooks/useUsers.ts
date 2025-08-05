@@ -91,11 +91,11 @@ export const useDeleteUser = () => {
     mutationFn: async (userId: string) => {
       console.log('Attempting to delete user:', userId);
       
-      // Get profile data first
+      // Get profile data first using id (not user_id)
       const { data: profile } = await supabase
         .from('profiles')
         .select('id, full_name, user_id')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .maybeSingle();
 
       console.log('Profile found:', profile);

@@ -47,40 +47,21 @@ const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) => {
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: UserFormData) => {
-      // Check if email already exists
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', userData.email)
-        .single();
-
-      if (existingUser) {
-        throw new Error('Este email já está cadastrado no sistema');
-      }
-
-      // Create auth user
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.temp_password,
-        email_confirm: true,
+      // Use the admin RPC function to create user
+      const { data, error } = await supabase.rpc('create_user_as_admin', {
+        user_email: userData.email,
+        user_password: userData.temp_password,
+        user_full_name: userData.full_name,
+        user_role: userData.role,
+        user_organization: userData.organization || null,
       });
 
-      if (authError) throw authError;
+      if (error) {
+        console.error('Create user error:', error);
+        throw error;
+      }
 
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: authUser.user.id,
-          full_name: userData.full_name,
-          email: userData.email,
-          role: userData.role,
-          organization: userData.organization || null,
-        });
-
-      if (profileError) throw profileError;
-
-      return authUser.user;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
