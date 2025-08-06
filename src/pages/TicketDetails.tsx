@@ -349,7 +349,7 @@ const TicketDetails = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="unassigned">Não atribuído</SelectItem>
-                          {users?.filter(user => ['admin', 'owner', 'employee'].includes(user.role))
+                          {users?.filter(user => ['admin', 'owner'].includes(user.role))
                             .map(user => (
                               <SelectItem key={user.id} value={user.id}>
                                 {user.full_name}
