@@ -169,19 +169,34 @@ const ProfileSettings = () => {
     }
   };
 
+  if (!profile) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações do Perfil</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Informações do Perfil</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           {/* Avatar Section */}
           <div className="flex items-center space-x-4">
             <Avatar className="h-20 w-20">
               <AvatarImage src={formData.avatar_url} />
               <AvatarFallback className="text-lg">
-                {formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                {formData.full_name ? formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AS'}
               </AvatarFallback>
             </Avatar>
             {isEditing && (
@@ -214,6 +229,7 @@ const ProfileSettings = () => {
                 value={formData.full_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                 disabled={!isEditing}
+                className={isEditing ? "border-primary/50" : ""}
               />
             </div>
 
@@ -225,6 +241,7 @@ const ProfileSettings = () => {
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 disabled={!isEditing}
+                className={isEditing ? "border-primary/50" : ""}
               />
             </div>
 
@@ -236,6 +253,7 @@ const ProfileSettings = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
                 disabled={!isEditing}
                 placeholder="Opcional"
+                className={isEditing ? "border-primary/50" : ""}
               />
             </div>
 
@@ -251,15 +269,47 @@ const ProfileSettings = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-2">
-              {!isEditing ? (
-                <Button type="button" onClick={() => setIsEditing(true)}>
+          <div className="flex flex-col space-y-4">
+            {!isEditing ? (
+              <div className="flex justify-start">
+                <Button 
+                  type="button" 
+                  onClick={() => {
+                    console.log('Entering edit mode...');
+                    setIsEditing(true);
+                  }}
+                  className="w-auto"
+                >
                   Editar Perfil
                 </Button>
-              ) : (
-                <>
-                  <Button type="submit" disabled={updateProfile.isPending}>
+              </div>
+            ) : (
+              <>
+                <div className="bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      Modo de edição ativo
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Faça suas alterações e clique em "Salvar Alterações" para confirmar.
+                  </p>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <Button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      console.log('Save button clicked!');
+                      console.log('Current form data:', formData);
+                      console.log('Original profile:', profile);
+                      handleSubmit(e);
+                    }}
+                    disabled={updateProfile.isPending}
+                    className="flex-1"
+                  >
                     <Save className="h-4 w-4 mr-2" />
                     {updateProfile.isPending ? 'Salvando...' : 'Salvar Alterações'}
                   </Button>
@@ -267,6 +317,7 @@ const ProfileSettings = () => {
                     type="button"
                     variant="outline"
                     onClick={() => {
+                      console.log('Canceling edit...');
                       setIsEditing(false);
                       if (profile) {
                         setFormData({
@@ -277,19 +328,15 @@ const ProfileSettings = () => {
                         });
                       }
                     }}
+                    className="flex-1"
                   >
                     Cancelar
                   </Button>
-                </>
-              )}
-            </div>
-            {isEditing && (
-              <div className="text-sm text-muted-foreground">
-                Modo de edição ativo
-              </div>
+                </div>
+              </>
             )}
           </div>
-        </form>
+        </div>
       </CardContent>
     </Card>
   );
