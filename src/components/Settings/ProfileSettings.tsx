@@ -72,7 +72,7 @@ const ProfileSettings = () => {
       // If nothing changed, don't make the call
       if (Object.keys(updateData).length === 0) {
         console.log('No changes detected, skipping update');
-        return profile;
+        throw new Error('NO_CHANGES');
       }
 
       const { data: result, error } = await supabase
@@ -101,7 +101,6 @@ const ProfileSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile-header'] });
       setIsEditing(false);
       
-      // Always show toast on successful update
       toast({
         title: 'Perfil atualizado',
         description: 'Suas informações foram atualizadas com sucesso.',
@@ -109,6 +108,17 @@ const ProfileSettings = () => {
     },
     onError: (error: any) => {
       console.error('Profile update error:', error);
+      
+      if (error.message === 'NO_CHANGES') {
+        setIsEditing(false);
+        toast({
+          title: 'Nenhuma alteração',
+          description: 'Não foram detectadas mudanças para salvar.',
+          variant: 'default',
+        });
+        return;
+      }
+      
       toast({
         title: 'Erro ao atualizar perfil',
         description: error.message,
