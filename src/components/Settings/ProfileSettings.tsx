@@ -251,35 +251,42 @@ const ProfileSettings = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-2">
-            {!isEditing ? (
-              <Button type="button" onClick={() => setIsEditing(true)}>
-                Editar Perfil
-              </Button>
-            ) : (
-              <>
-                <Button type="submit" disabled={updateProfile.isPending}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {updateProfile.isPending ? 'Salvando...' : 'Salvar'}
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-2">
+              {!isEditing ? (
+                <Button type="button" onClick={() => setIsEditing(true)}>
+                  Editar Perfil
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    if (profile) {
-                      setFormData({
-                        full_name: profile.full_name || '',
-                        email: profile.email || '',
-                        organization: profile.organization || '',
-                        avatar_url: profile.avatar_url || ''
-                      });
-                    }
-                  }}
-                >
-                  Cancelar
-                </Button>
-              </>
+              ) : (
+                <>
+                  <Button type="submit" disabled={updateProfile.isPending}>
+                    <Save className="h-4 w-4 mr-2" />
+                    {updateProfile.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (profile) {
+                        setFormData({
+                          full_name: profile.full_name || '',
+                          email: profile.email || '',
+                          organization: profile.organization || '',
+                          avatar_url: profile.avatar_url || ''
+                        });
+                      }
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+            </div>
+            {isEditing && (
+              <div className="text-sm text-muted-foreground">
+                Modo de edição ativo
+              </div>
             )}
           </div>
         </form>

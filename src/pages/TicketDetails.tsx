@@ -349,7 +349,7 @@ const TicketDetails = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="unassigned">Não atribuído</SelectItem>
-                          {users?.filter(user => ['admin', 'owner'].includes(user.role))
+                          {users?.filter(user => user.role === 'admin' || user.role === 'owner')
                             .map(user => (
                               <SelectItem key={user.id} value={user.id}>
                                 {user.full_name}
@@ -400,7 +400,9 @@ const TicketDetails = () => {
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Solicitante</p>
-                    <p className="text-sm text-muted-foreground">{ticket.submitter?.full_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {ticket.submitter?.full_name || 'Nome não disponível'}
+                    </p>
                   </div>
                 </div>
                 

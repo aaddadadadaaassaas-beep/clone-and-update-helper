@@ -98,14 +98,19 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleDownloadFile = async (file: UploadedFile) => {
     try {
+      console.log('Attempting to download file:', file);
       const url = await getFileUrl(file.storagePath);
       if (url) {
+        console.log('Download URL generated:', url);
         const link = document.createElement('a');
         link.href = url;
         link.download = file.name;
+        link.target = '_blank'; // Open in new tab as fallback
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+      } else {
+        console.error('No URL generated for file download');
       }
     } catch (error) {
       console.error('Download failed:', error);

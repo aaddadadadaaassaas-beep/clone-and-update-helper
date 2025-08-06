@@ -141,18 +141,31 @@ export const useFileUpload = () => {
 
   const getFileUrl = async (storagePath: string): Promise<string | null> => {
     try {
+      console.log('Getting URL for storage path:', storagePath);
+      
       const { data, error } = await supabase.storage
         .from('ticket-attachments')
         .createSignedUrl(storagePath, 3600); // 1 hour expiry
 
       if (error) {
         console.error('Get URL error:', error);
+        toast({
+          title: "Erro no download",
+          description: "Não foi possível gerar o link de download.",
+          variant: "destructive",
+        });
         return null;
       }
 
+      console.log('Generated signed URL:', data.signedUrl);
       return data.signedUrl;
     } catch (error) {
       console.error('Failed to get file URL:', error);
+      toast({
+        title: "Erro no download",
+        description: "Falha ao acessar arquivo.",
+        variant: "destructive",
+      });
       return null;
     }
   };
