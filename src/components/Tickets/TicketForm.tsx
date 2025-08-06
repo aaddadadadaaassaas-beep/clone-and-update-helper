@@ -59,10 +59,13 @@ const TicketForm = () => {
         priority: data.priority,
       });
       
-      form.reset();
-      setUploadedFiles([]);
-      setCreatedTicketId(null);
-      navigate('/tickets');
+      // Set the created ticket ID to enable file uploads
+      setCreatedTicketId(result.id);
+      
+      toast({
+        title: "Ticket criado com sucesso!",
+        description: "Agora você pode adicionar anexos se desejar.",
+      });
     } catch (error) {
       // Error handling is done in the mutation
     }
@@ -171,30 +174,63 @@ const TicketForm = () => {
 
             <div className="space-y-4">
               <Label>Anexos</Label>
-              <FileUpload
-                ticketId="temp-id" // Temporary ID for demo, real implementation would need ticket ID first
-                onFilesChange={handleFilesChange}
-                maxFiles={5}
-                disabled={false}
-                existingFiles={uploadedFiles}
-              />
+              {!createdTicketId ? (
+                <div className="p-4 bg-muted/50 rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Primeiro crie o ticket para poder adicionar anexos
+                  </p>
+                </div>
+              ) : (
+                <FileUpload
+                  ticketId={createdTicketId}
+                  onFilesChange={handleFilesChange}
+                  maxFiles={5}
+                  disabled={false}
+                  existingFiles={uploadedFiles}
+                />
+              )}
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={createTicket.isPending} className="flex-1">
-                {createTicket.isPending ? "Criando..." : "Criar Ticket"}
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  form.reset();
-                  setUploadedFiles([]);
-                  setCreatedTicketId(null);
-                }}
-              >
-                Limpar
-              </Button>
+              {!createdTicketId ? (
+                <>
+                  <Button type="submit" disabled={createTicket.isPending} className="flex-1">
+                    {createTicket.isPending ? "Criando..." : "Criar Ticket"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      form.reset();
+                      setUploadedFiles([]);
+                      setCreatedTicketId(null);
+                    }}
+                  >
+                    Limpar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    type="button" 
+                    onClick={() => navigate('/tickets')}
+                    className="flex-1"
+                  >
+                    Ir para Meus Tickets
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      form.reset();
+                      setUploadedFiles([]);
+                      setCreatedTicketId(null);
+                    }}
+                  >
+                    Criar Novo Ticket
+                  </Button>
+                </>
+              )}
             </div>
           </form>
         </Form>
