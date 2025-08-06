@@ -39,6 +39,18 @@ export const useFileUpload = () => {
       }
 
       // Insert attachment record to database
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('User not authenticated');
+
+      // Get profile ID from user ID
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
       const { data: attachmentData, error: dbError } = await supabase
         .from('attachments')
         .insert({
@@ -48,7 +60,7 @@ export const useFileUpload = () => {
           mime_type: file.type,
           file_path: uploadData.path, // Legacy field
           storage_path: uploadData.path, // New field for storage
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: profile.id // Use profile ID, not auth user ID
         })
         .select()
         .single();

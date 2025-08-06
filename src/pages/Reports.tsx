@@ -6,9 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import JsonExport from '@/components/Reports/JsonExport';
 import BatchOperations from '@/components/Admin/BatchOperations';
 import { FileText, Download, Zap, BarChart3, TrendingUp, Users } from 'lucide-react';
+import { useReports } from '@/hooks/useReports';
 
 const Reports = () => {
   const [showJsonExport, setShowJsonExport] = useState(false);
+  const { generatePerformanceReport, generateUsersReport, generateCategoriesReport } = useReports();
 
   return (
     <Layout title="Relatórios" subtitle="Gerencie relatórios e operações avançadas">
@@ -42,9 +44,15 @@ const Reports = () => {
                 <p className="text-xs text-muted-foreground">
                   Taxa de resolução no prazo
                 </p>
-                <Button variant="outline" size="sm" className="mt-4 w-full">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-4 w-full"
+                  onClick={() => generatePerformanceReport.mutate()}
+                  disabled={generatePerformanceReport.isPending}
+                >
                   <FileText className="h-4 w-4 mr-2" />
-                  Gerar Relatório
+                  {generatePerformanceReport.isPending ? 'Gerando...' : 'Gerar Relatório'}
                 </Button>
               </CardContent>
             </Card>
@@ -61,9 +69,15 @@ const Reports = () => {
                 <p className="text-xs text-muted-foreground">
                   Usuários ativos no sistema
                 </p>
-                <Button variant="outline" size="sm" className="mt-4 w-full">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-4 w-full"
+                  onClick={() => generateUsersReport.mutate()}
+                  disabled={generateUsersReport.isPending}
+                >
                   <FileText className="h-4 w-4 mr-2" />
-                  Gerar Relatório
+                  {generateUsersReport.isPending ? 'Gerando...' : 'Gerar Relatório'}
                 </Button>
               </CardContent>
             </Card>
@@ -80,9 +94,15 @@ const Reports = () => {
                 <p className="text-xs text-muted-foreground">
                   Categorias configuradas
                 </p>
-                <Button variant="outline" size="sm" className="mt-4 w-full">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-4 w-full"
+                  onClick={() => generateCategoriesReport.mutate()}
+                  disabled={generateCategoriesReport.isPending}
+                >
                   <FileText className="h-4 w-4 mr-2" />
-                  Gerar Relatório
+                  {generateCategoriesReport.isPending ? 'Gerando...' : 'Gerar Relatório'}
                 </Button>
               </CardContent>
             </Card>

@@ -27,6 +27,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, Edit, Trash2, MoreHorizontal, Tag, Search } from "lucide-react";
+import { useCategories } from "@/hooks/useCategories";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const CategoryManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,65 +42,117 @@ const CategoryManager = () => {
     color: "#3b82f6"
   });
 
-  const mockCategories = [
-    {
-      id: "1",
-      name: "Hardware",
-      description: "Problemas relacionados a equipamentos físicos",
-      color: "#ef4444",
-      ticketCount: 45,
-      createdAt: "2024-01-01T00:00:00Z"
-    },
-    {
-      id: "2",
-      name: "Software",
-      description: "Questões de aplicativos e sistemas operacionais",
-      color: "#3b82f6",
-      ticketCount: 32,
-      createdAt: "2024-01-02T00:00:00Z"
-    },
-    {
-      id: "3",
-      name: "Rede",
-      description: "Conectividade e problemas de internet",
-      color: "#10b981",
-      ticketCount: 18,
-      createdAt: "2024-01-03T00:00:00Z"
-    },
-    {
-      id: "4",
-      name: "Acesso",
-      description: "Permissões e autenticação de usuários",
-      color: "#f59e0b",
-      ticketCount: 12,
-      createdAt: "2024-01-04T00:00:00Z"
-    }
-  ];
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: categories = [], isLoading } = useCategories();
 
-  const filteredCategories = mockCategories.filter(category =>
+  // Create category mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const { data: result, error } = await supabase
+        .from('categories')
+        .insert([data])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Categoria criada",
+        description: "Nova categoria foi criada com sucesso.",
+      });
+      setShowDialog(false);
+      setFormData({ name: "", description: "", color: "#3b82f6" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar categoria",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update category mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const { data: result, error } = await supabase
+        .from('categories')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Categoria atualizada",
+        description: "Categoria foi atualizada com sucesso.",
+      });
+      setShowDialog(false);
+      setEditingCategory(null);
+      setFormData({ name: "", description: "", color: "#3b82f6" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar categoria",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete category mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('categories')
+        .update({ is_active: false })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Categoria excluída",
+        description: "Categoria foi excluída com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir categoria",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
+    category.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingCategory) {
-      // Atualizar categoria existente
-      console.log("Atualizando categoria:", formData);
+      updateMutation.mutate({ id: editingCategory.id, data: formData });
     } else {
-      // Criar nova categoria
-      console.log("Criando categoria:", formData);
+      createMutation.mutate(formData);
     }
-    setShowDialog(false);
-    setEditingCategory(null);
-    setFormData({ name: "", description: "", color: "#3b82f6" });
   };
 
   const handleEdit = (category: any) => {
     setEditingCategory(category);
     setFormData({
       name: category.name,
-      description: category.description,
+      description: category.description || "",
       color: category.color
     });
     setShowDialog(true);
@@ -104,7 +160,7 @@ const CategoryManager = () => {
 
   const handleDelete = (categoryId: string) => {
     if (confirm("Tem certeza que deseja excluir esta categoria?")) {
-      console.log("Excluindo categoria:", categoryId);
+      deleteMutation.mutate(categoryId);
     }
   };
 
@@ -259,16 +315,16 @@ const CategoryManager = () => {
                   </TableCell>
                   <TableCell className="max-w-xs">
                     <p className="text-sm text-muted-foreground truncate">
-                      {category.description}
+                      {category.description || "Sem descrição"}
                     </p>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">
-                      {category.ticketCount} tickets
+                      Categoria ativa
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {new Date(category.createdAt).toLocaleDateString('pt-BR')}
+                    {new Date(category.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
