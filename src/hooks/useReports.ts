@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import * as XLSX from 'xlsx';
 
 export interface ReportData {
   type: 'performance' | 'users' | 'categories';
@@ -8,11 +9,107 @@ export interface ReportData {
   generatedAt: string;
 }
 
+export type ExportFormat = 'json' | 'excel';
+
+const downloadFile = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const exportToExcel = (data: ReportData, filename: string) => {
+  const workbook = XLSX.utils.book_new();
+  
+  if (data.type === 'performance') {
+    // Aba de métricas gerais
+    const metricsSheet = XLSX.utils.json_to_sheet([
+      { Métrica: 'Total de Tickets', Valor: data.data.totalTickets },
+      { Métrica: 'Tickets Fechados', Valor: data.data.closedTickets },
+      { Métrica: 'Tickets Atrasados', Valor: data.data.overdueTickets },
+      { Métrica: 'Taxa de Performance (%)', Valor: data.data.performanceRate },
+      { Métrica: 'Tempo Médio de Resolução', Valor: data.data.avgResolutionTime }
+    ]);
+    XLSX.utils.book_append_sheet(workbook, metricsSheet, 'Métricas Gerais');
+    
+    // Aba de tickets por prioridade
+    const prioritySheet = XLSX.utils.json_to_sheet([
+      { Prioridade: 'Urgente', Quantidade: data.data.ticketsByPriority.urgent },
+      { Prioridade: 'Alta', Quantidade: data.data.ticketsByPriority.high },
+      { Prioridade: 'Normal', Quantidade: data.data.ticketsByPriority.normal },
+      { Prioridade: 'Baixa', Quantidade: data.data.ticketsByPriority.low }
+    ]);
+    XLSX.utils.book_append_sheet(workbook, prioritySheet, 'Por Prioridade');
+  } 
+  else if (data.type === 'users') {
+    // Aba de estatísticas
+    const statsSheet = XLSX.utils.json_to_sheet([
+      { Métrica: 'Total de Usuários', Valor: data.data.totalUsers },
+      { Métrica: 'Usuários Ativos', Valor: data.data.activeUsers },
+      { Métrica: 'Usuários Inativos', Valor: data.data.inactiveUsers },
+      { Métrica: 'Administradores', Valor: data.data.usersByRole.admin },
+      { Métrica: 'Proprietários', Valor: data.data.usersByRole.owner },
+      { Métrica: 'Funcionários', Valor: data.data.usersByRole.employee },
+      { Métrica: 'Usuários Comuns', Valor: data.data.usersByRole.user }
+    ]);
+    XLSX.utils.book_append_sheet(workbook, statsSheet, 'Estatísticas');
+    
+    // Aba de lista de usuários
+    const usersSheet = XLSX.utils.json_to_sheet(
+      data.data.users.map((user: any) => ({
+        Nome: user.name,
+        Email: user.email,
+        Perfil: user.role === 'admin' ? 'Administrador' : 
+               user.role === 'owner' ? 'Proprietário' :
+               user.role === 'employee' ? 'Funcionário' : 'Usuário',
+        Status: user.isActive ? 'Ativo' : 'Inativo',
+        Organização: user.organization || 'N/A',
+        'Data de Criação': new Date(user.createdAt).toLocaleDateString('pt-BR')
+      }))
+    );
+    XLSX.utils.book_append_sheet(workbook, usersSheet, 'Lista de Usuários');
+  }
+  else if (data.type === 'categories') {
+    // Aba de estatísticas
+    const statsSheet = XLSX.utils.json_to_sheet([
+      { Métrica: 'Total de Categorias', Valor: data.data.totalCategories },
+      { Métrica: 'Categorias Ativas', Valor: data.data.activeCategories }
+    ]);
+    XLSX.utils.book_append_sheet(workbook, statsSheet, 'Estatísticas');
+    
+    // Aba de lista de categorias
+    const categoriesSheet = XLSX.utils.json_to_sheet(
+      data.data.categories.map((category: any) => ({
+        Nome: category.name,
+        Descrição: category.description || 'N/A',
+        Cor: category.color,
+        'Tickets Associados': category.ticketCount,
+        Status: category.isActive ? 'Ativa' : 'Inativa',
+        'Data de Criação': new Date(category.createdAt).toLocaleDateString('pt-BR')
+      }))
+    );
+    XLSX.utils.book_append_sheet(workbook, categoriesSheet, 'Lista de Categorias');
+  }
+  
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  downloadFile(blob, filename);
+};
+
+const exportToJson = (data: ReportData, filename: string) => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  downloadFile(blob, filename);
+};
+
 export const useReports = () => {
   const { toast } = useToast();
 
   const generatePerformanceReport = useMutation({
-    mutationFn: async (): Promise<ReportData> => {
+    mutationFn: async ({ format }: { format: ExportFormat }): Promise<ReportData> => {
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select(`
@@ -43,7 +140,7 @@ export const useReports = () => {
 
       const performanceRate = totalTickets > 0 ? Math.round((resolvedOnTime / totalTickets) * 100) : 0;
 
-      return {
+      const reportData: ReportData = {
         type: 'performance',
         data: {
           totalTickets,
@@ -60,22 +157,21 @@ export const useReports = () => {
         },
         generatedAt: new Date().toISOString()
       };
-    },
-    onSuccess: (data) => {
-      // Fazer download do relatório
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `relatorio-performance-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
 
+      // Fazer download baseado no formato
+      const dateStr = new Date().toISOString().split('T')[0];
+      if (format === 'excel') {
+        exportToExcel(reportData, `relatorio-performance-${dateStr}.xlsx`);
+      } else {
+        exportToJson(reportData, `relatorio-performance-${dateStr}.json`);
+      }
+
+      return reportData;
+    },
+    onSuccess: (data, variables) => {
       toast({
         title: 'Relatório gerado',
-        description: 'Relatório de performance foi gerado e baixado com sucesso.',
+        description: `Relatório de performance foi gerado em formato ${variables.format === 'excel' ? 'Excel' : 'JSON'} e baixado com sucesso.`,
       });
     },
     onError: (error: any) => {
@@ -88,7 +184,7 @@ export const useReports = () => {
   });
 
   const generateUsersReport = useMutation({
-    mutationFn: async (): Promise<ReportData> => {
+    mutationFn: async ({ format }: { format: ExportFormat }): Promise<ReportData> => {
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select(`
@@ -111,7 +207,7 @@ export const useReports = () => {
         user: profiles.filter(p => p.role === 'user').length,
       };
 
-      return {
+      const reportData: ReportData = {
         type: 'users',
         data: {
           totalUsers: profiles.length,
@@ -129,21 +225,21 @@ export const useReports = () => {
         },
         generatedAt: new Date().toISOString()
       };
-    },
-    onSuccess: (data) => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `relatorio-usuarios-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
 
+      // Fazer download baseado no formato
+      const dateStr = new Date().toISOString().split('T')[0];
+      if (format === 'excel') {
+        exportToExcel(reportData, `relatorio-usuarios-${dateStr}.xlsx`);
+      } else {
+        exportToJson(reportData, `relatorio-usuarios-${dateStr}.json`);
+      }
+
+      return reportData;
+    },
+    onSuccess: (data, variables) => {
       toast({
         title: 'Relatório gerado',
-        description: 'Relatório de usuários foi gerado e baixado com sucesso.',
+        description: `Relatório de usuários foi gerado em formato ${variables.format === 'excel' ? 'Excel' : 'JSON'} e baixado com sucesso.`,
       });
     },
     onError: (error: any) => {
@@ -156,7 +252,7 @@ export const useReports = () => {
   });
 
   const generateCategoriesReport = useMutation({
-    mutationFn: async (): Promise<ReportData> => {
+    mutationFn: async ({ format }: { format: ExportFormat }): Promise<ReportData> => {
       const { data: categories, error: catError } = await supabase
         .from('categories')
         .select('*');
@@ -180,7 +276,7 @@ export const useReports = () => {
         })
       );
 
-      return {
+      const reportData: ReportData = {
         type: 'categories',
         data: {
           totalCategories: categories.length,
@@ -196,21 +292,21 @@ export const useReports = () => {
         },
         generatedAt: new Date().toISOString()
       };
-    },
-    onSuccess: (data) => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `relatorio-categorias-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
 
+      // Fazer download baseado no formato
+      const dateStr = new Date().toISOString().split('T')[0];
+      if (format === 'excel') {
+        exportToExcel(reportData, `relatorio-categorias-${dateStr}.xlsx`);
+      } else {
+        exportToJson(reportData, `relatorio-categorias-${dateStr}.json`);
+      }
+
+      return reportData;
+    },
+    onSuccess: (data, variables) => {
       toast({
         title: 'Relatório gerado',
-        description: 'Relatório de categorias foi gerado e baixado com sucesso.',
+        description: `Relatório de categorias foi gerado em formato ${variables.format === 'excel' ? 'Excel' : 'JSON'} e baixado com sucesso.`,
       });
     },
     onError: (error: any) => {

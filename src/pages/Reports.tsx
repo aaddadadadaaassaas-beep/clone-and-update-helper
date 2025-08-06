@@ -44,16 +44,28 @@ const Reports = () => {
                 <p className="text-xs text-muted-foreground">
                   Taxa de resolução no prazo
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-4 w-full"
-                  onClick={() => generatePerformanceReport.mutate()}
-                  disabled={generatePerformanceReport.isPending}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {generatePerformanceReport.isPending ? 'Gerando...' : 'Gerar Relatório'}
-                </Button>
+                <div className="flex space-x-2 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => generatePerformanceReport.mutate({ format: 'json' })}
+                    disabled={generatePerformanceReport.isPending}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    JSON
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => generatePerformanceReport.mutate({ format: 'excel' })}
+                    disabled={generatePerformanceReport.isPending}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Excel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -69,16 +81,28 @@ const Reports = () => {
                 <p className="text-xs text-muted-foreground">
                   Usuários ativos no sistema
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-4 w-full"
-                  onClick={() => generateUsersReport.mutate()}
-                  disabled={generateUsersReport.isPending}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {generateUsersReport.isPending ? 'Gerando...' : 'Gerar Relatório'}
-                </Button>
+                <div className="flex space-x-2 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => generateUsersReport.mutate({ format: 'json' })}
+                    disabled={generateUsersReport.isPending}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    JSON
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => generateUsersReport.mutate({ format: 'excel' })}
+                    disabled={generateUsersReport.isPending}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Excel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -94,16 +118,28 @@ const Reports = () => {
                 <p className="text-xs text-muted-foreground">
                   Categorias configuradas
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-4 w-full"
-                  onClick={() => generateCategoriesReport.mutate()}
-                  disabled={generateCategoriesReport.isPending}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {generateCategoriesReport.isPending ? 'Gerando...' : 'Gerar Relatório'}
-                </Button>
+                <div className="flex space-x-2 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => generateCategoriesReport.mutate({ format: 'json' })}
+                    disabled={generateCategoriesReport.isPending}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    JSON
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => generateCategoriesReport.mutate({ format: 'excel' })}
+                    disabled={generateCategoriesReport.isPending}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Excel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
