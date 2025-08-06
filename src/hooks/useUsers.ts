@@ -116,7 +116,7 @@ export const useDeleteUser = () => {
 
       // Use the safe delete function from the database
       const { data, error } = await supabase.rpc('delete_user_safely', {
-        target_user_id: profile.id
+        target_profile_id: profile.id
       });
 
       if (error) {

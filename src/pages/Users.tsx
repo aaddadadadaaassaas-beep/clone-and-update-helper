@@ -6,7 +6,6 @@ const Users = () => {
   return (
     <Layout title="Usuários" subtitle="Gerencie usuários e permissões do sistema">
       <div className="space-y-6">
-        <UserManagement />
         <UsersList />
       </div>
     </Layout>

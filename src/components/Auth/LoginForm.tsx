@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Ticket } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -107,6 +108,9 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">

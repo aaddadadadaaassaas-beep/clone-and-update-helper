@@ -130,7 +130,7 @@ const UsersList = () => {
     if (!selectedUserForDelete) return;
     
     try {
-      await deleteUser.mutateAsync(selectedUserForDelete.user_id);
+      await deleteUser.mutateAsync(selectedUserForDelete.id); // Use profile id
       setShowDeleteDialog(false);
       setSelectedUserForDelete(null);
     } catch (error) {
@@ -278,15 +278,13 @@ const UsersList = () => {
                               </>
                             )}
                           </DropdownMenuItem>
-                          {user.role !== 'owner' && user.role !== 'admin' && (
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => openDeleteDialog(user)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          )}
+          <DropdownMenuItem 
+            className="text-destructive"
+            onClick={() => openDeleteDialog(user)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => openPasswordDialog(user)}
                           >

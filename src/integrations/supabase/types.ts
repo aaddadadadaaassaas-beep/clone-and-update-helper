@@ -449,7 +449,7 @@ export type Database = {
         Returns: Json
       }
       delete_user_safely: {
-        Args: { target_user_id: string }
+        Args: { target_profile_id: string }
         Returns: boolean
       }
       get_attachment_url: {
