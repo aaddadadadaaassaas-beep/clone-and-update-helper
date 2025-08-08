@@ -428,6 +428,10 @@ export type Database = {
         Args: { target_user_id: string; new_password: string }
         Returns: Json
       }
+      check_ticket_access: {
+        Args: { ticket_id: string; user_auth_id: string }
+        Returns: boolean
+      }
       create_notification: {
         Args: {
           p_user_id: string
